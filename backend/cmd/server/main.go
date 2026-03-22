@@ -41,11 +41,6 @@ func main() {
 		log.Fatalf("failed to run migrations: %v", err)
 	}
 
-	// Auto-seed first admin if configured and no users exist
-	if err := db.AutoSeedAdmin(ctx, pool, cfg.AdminEmail, cfg.AdminPassword, cfg.AdminName); err != nil {
-		log.Printf("warning: auto-seed failed: %v", err)
-	}
-
 	app := fiber.New(fiber.Config{
 		AppName:      "Platzhalter API",
 		ErrorHandler: errorHandler,
