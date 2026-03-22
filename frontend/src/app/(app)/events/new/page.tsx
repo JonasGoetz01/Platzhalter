@@ -50,7 +50,7 @@ export default function NewEventPage() {
         method: "POST",
         body: JSON.stringify({
           name: form.get("name"),
-          event_date: new Date(form.get("date") as string).toISOString(),
+          event_date: form.get("date") || "",
           description: form.get("description") || "",
         }),
       })
