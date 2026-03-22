@@ -11,6 +11,7 @@ import (
 
 func AutoSeedAdmin(ctx context.Context, pool *pgxpool.Pool, email, password, name string) error {
 	if email == "" || password == "" {
+		log.Println("Auto-seed skipped: ADMIN_EMAIL or ADMIN_PASSWORD not set")
 		return nil
 	}
 
