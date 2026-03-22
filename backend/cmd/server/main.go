@@ -81,13 +81,6 @@ func main() {
 	v1.Post("/persons/swap", h.Person.Swap)
 	v1.Post("/persons/bulk-assign", h.Person.BulkAssign)
 
-	// Groups
-	v1.Get("/events/:eventId/groups", h.Group.List)
-	v1.Post("/events/:eventId/groups", h.Group.Create)
-	v1.Put("/groups/:id", h.Group.Update)
-	v1.Delete("/groups/:id", h.Group.Delete)
-	v1.Post("/groups/merge", h.Group.Merge)
-
 	// SSE for real-time updates
 	v1.Get("/events/:id/stream", h.SSE.Stream)
 

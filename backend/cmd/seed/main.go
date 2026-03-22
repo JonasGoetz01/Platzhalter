@@ -41,57 +41,13 @@ type floorPlanLayout struct {
 
 // ── Seed data ───────────────────────────────────────────────
 
-var groupColors = []string{
-	"#ef4444", "#f97316", "#eab308", "#22c55e",
-	"#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899",
-}
-
-type groupDef struct {
-	name    string
-	color   string
-	members []string
-}
-
-var groups = []groupDef{
-	{
-		name:  "Familie Müller",
-		color: groupColors[0],
-		members: []string{
-			"Hans Müller", "Petra Müller", "Lukas Müller", "Anna Müller",
-		},
-	},
-	{
-		name:  "Familie Schmidt",
-		color: groupColors[1],
-		members: []string{
-			"Thomas Schmidt", "Sabine Schmidt", "Felix Schmidt", "Marie Schmidt",
-		},
-	},
-	{
-		name:  "Arbeitskollegen",
-		color: groupColors[2],
-		members: []string{
-			"Michael Weber", "Julia Fischer", "Stefan Wagner", "Claudia Becker",
-			"Markus Hoffmann", "Andrea Schulz",
-		},
-	},
-	{
-		name:  "Studienfreunde",
-		color: groupColors[3],
-		members: []string{
-			"Daniel Braun", "Lisa Zimmermann", "Patrick Krüger", "Nina Wolf",
-		},
-	},
-	{
-		name:  "Nachbarn",
-		color: groupColors[4],
-		members: []string{
-			"Rainer Hartmann", "Monika Hartmann", "Klaus Lehmann",
-		},
-	},
-}
-
-var ungroupedGuests = []string{
+var guestNames = []string{
+	"Hans Müller", "Petra Müller", "Lukas Müller", "Anna Müller",
+	"Thomas Schmidt", "Sabine Schmidt", "Felix Schmidt", "Marie Schmidt",
+	"Michael Weber", "Julia Fischer", "Stefan Wagner", "Claudia Becker",
+	"Markus Hoffmann", "Andrea Schulz",
+	"Daniel Braun", "Lisa Zimmermann", "Patrick Krüger", "Nina Wolf",
+	"Rainer Hartmann", "Monika Hartmann", "Klaus Lehmann",
 	"Eva Richter", "Christian Baumann", "Susanne Frank",
 	"Jörg Albrecht", "Katrin Schreiber", "Tobias Keller",
 	"Birgit Lange", "Oliver Huber", "Melanie Koch",
@@ -162,7 +118,7 @@ func seed(ctx context.Context, pool *pgxpool.Pool) error {
 	}
 	log.Printf("Created floorplan with %d tables", len(tables))
 
-	// 4. Create groups and their members
+	// 4. Create guests and assign seats
 	type seatAssignment struct {
 		personID string
 		tableID  string
@@ -170,46 +126,9 @@ func seed(ctx context.Context, pool *pgxpool.Pool) error {
 	}
 	var assignments []seatAssignment
 
-	seatCursor := 0 // global seat counter across tables
+	seatCursor := 0
 
-	for i, g := range groups {
-		var groupID string
-		err = pool.QueryRow(ctx, `
-			INSERT INTO groups (event_id, name, color, sort_order)
-			VALUES ($1::UUID, $2, $3, $4)
-			RETURNING id::TEXT
-		`, eventID, g.name, g.color, i).Scan(&groupID)
-		if err != nil {
-			return fmt.Errorf("create group %s: %w", g.name, err)
-		}
-		log.Printf("Created group: %s (%d members)", g.name, len(g.members))
-
-		for _, name := range g.members {
-			var personID string
-			err = pool.QueryRow(ctx, `
-				INSERT INTO persons (event_id, name, group_id, parked)
-				VALUES ($1::UUID, $2, $3::UUID, TRUE)
-				RETURNING id::TEXT
-			`, eventID, name, groupID).Scan(&personID)
-			if err != nil {
-				return fmt.Errorf("create person %s: %w", name, err)
-			}
-
-			// Assign seats to group members (keep them together on the same table)
-			tableIdx, seatRef := assignSeatFromCursor(tables, seatCursor)
-			if tableIdx >= 0 {
-				assignments = append(assignments, seatAssignment{
-					personID: personID,
-					tableID:  tables[tableIdx].ID,
-					seatRef:  seatRef,
-				})
-				seatCursor++
-			}
-		}
-	}
-
-	// 5. Create ungrouped guests
-	for _, name := range ungroupedGuests {
+	for _, name := range guestNames {
 		bookedTable := randomBookedTable(tables)
 
 		var personID string
@@ -222,8 +141,8 @@ func seed(ctx context.Context, pool *pgxpool.Pool) error {
 			return fmt.Errorf("create person %s: %w", name, err)
 		}
 
-		// Assign ~60% of ungrouped guests to seats
-		if rand.Float64() < 0.6 {
+		// Assign ~70% of guests to seats
+		if rand.Float64() < 0.7 {
 			tableIdx, seatRef := assignSeatFromCursor(tables, seatCursor)
 			if tableIdx >= 0 {
 				assignments = append(assignments, seatAssignment{
@@ -236,7 +155,7 @@ func seed(ctx context.Context, pool *pgxpool.Pool) error {
 		}
 	}
 
-	// 6. Execute seat assignments
+	// 5. Execute seat assignments
 	for _, a := range assignments {
 		_, err = pool.Exec(ctx, `
 			UPDATE persons
@@ -322,7 +241,6 @@ func buildTables() []floorPlanTable {
 }
 
 // assignSeatFromCursor maps a global seat index to (tableIndex, seatRef).
-// It walks edges in order: top, right, bottom, left for each table.
 func assignSeatFromCursor(tables []floorPlanTable, cursor int) (int, string) {
 	edgeOrder := []string{"top", "right", "bottom", "left"}
 	offset := 0

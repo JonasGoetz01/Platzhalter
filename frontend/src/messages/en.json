@@ -26,7 +26,11 @@
     "signOut": "Sign out",
     "userMenu": "User menu",
     "navigation": "Navigation",
-    "user": "User"
+    "user": "User",
+    "home": "Home",
+    "guests": "Guests",
+    "planner": "Planner",
+    "summary": "Summary"
   },
   "floorplan": {
     "toolbar": {
@@ -109,6 +113,14 @@
       "seats": "{count} seats",
       "rotate": "Rotate",
       "delete": "Delete"
+    },
+    "setup": {
+      "title": "Set up tables",
+      "description": "Define how many tables and seats you need.",
+      "tableCount": "Number of tables",
+      "seatsPerTable": "Seats per table",
+      "create": "Create tables",
+      "addTable": "Add table"
     }
   },
   "events": {
@@ -124,7 +136,7 @@
     "noDate": "No date",
     "editEvent": "Edit",
     "deleteEvent": "Delete event?",
-    "deleteEventDescription": "This action cannot be undone. All associated data (seating plan, guests, groups) will be permanently deleted.",
+    "deleteEventDescription": "This action cannot be undone. All associated data (seating plan, guests) will be permanently deleted.",
     "deleteConfirm": "Delete permanently",
     "editTitle": "Edit event",
     "editDescription": "Change the event details.",
@@ -139,7 +151,7 @@
     "editLayout": "Edit layout",
     "seating": "Seating",
     "guestList": "Guest list",
-    "groups": "Groups",
+    "guestList": "Guest list",
     "pdfExport": "PDF Export",
     "pdfExported": "PDF exported",
     "floorplan": "Floor plan",
@@ -153,7 +165,8 @@
     "namePlaceholder": "e.g. Smith Wedding",
     "descriptionOptional": "Description (optional)",
     "descriptionPlaceholder": "Additional information...",
-    "eventCreated": "Event created"
+    "eventCreated": "Event created",
+    "startPlacement": "Start seating"
   },
   "guests": {
     "title": "Guest list",
@@ -170,7 +183,6 @@
     "namePlaceholder": "e.g. John Doe",
     "bookedTable": "Booked table",
     "bookedTablePlaceholder": "e.g. Table 1",
-    "group": "Group",
     "seat": "Seat",
     "placement": "Placement",
     "notSeated": "Not seated",
@@ -180,59 +192,7 @@
     "guestRemoved": "Guest removed",
     "deleteGuest": "Remove guest?",
     "deleteGuestDescription": "{name} will be permanently removed from the guest list.",
-    "removeConfirm": "Remove",
-    "select": "Select",
-    "selectedCount": "{count} selected",
-    "assignGroup": "Group",
-    "noGroup": "No group",
-    "groupAssigned": "Assigned to {group}",
-    "groupRemoved": "Removed from group",
-    "guestsDeleted": "{count} removed",
-    "notGrouped": "Not grouped",
-    "selectAll": "Select all",
-    "correctTable": "Correct table",
-    "wrongTable": "Wrong table",
-    "actualTable": "at {table}",
-    "bookedLabel": "booked: {table}",
-    "bulkDeleteConfirm": "Do you really want to delete {count} guests?",
-    "noUngrouped": "No ungrouped guests"
-  },
-  "groups": {
-    "title": "Groups",
-    "subtitle": "Organize guests into groups for table assignment.",
-    "newGroup": "New group",
-    "createFirstGroup": "Create first group",
-    "noGroups": "No groups created yet.",
-    "merge": "Merge",
-    "editGroup": "Edit group",
-    "newGroupTitle": "New group",
-    "editGroupDescription": "Change the name or color of the group.",
-    "newGroupDescription": "Create a new group for table assignment.",
-    "namePlaceholder": "e.g. Smith Family",
-    "color": "Color",
-    "members": "{count} {count, plural, one {member} other {members}}",
-    "more": "+{count} more",
-    "groupUpdated": "Group updated",
-    "groupCreated": "Group created",
-    "groupDeleted": "Group deleted",
-    "deleteGroup": "Delete group?",
-    "deleteGroupDescription": "The group \"{name}\" will be deleted. Members will be unassigned from any group.",
-    "mergeTitle": "Merge groups",
-    "mergeDescription": "All members of the source group will be moved to the target group. The source group will be deleted.",
-    "sourceGroup": "Source group (will be deleted)",
-    "targetGroup": "Target group (will remain)",
-    "selectGroup": "Select group...",
-    "merged": "Groups merged",
-    "manageMembers": "Members",
-    "addMembers": "Add members",
-    "searchUngrouped": "Search ungrouped...",
-    "selectAllVisible": "Select all visible",
-    "removeMember": "Remove",
-    "done": "Done",
-    "memberAdded": "{name} added",
-    "memberRemoved": "{name} removed",
-    "membersAdded": "{count} added",
-    "currentMembers": "Members ({count})"
+    "removeConfirm": "Remove"
   },
   "login": {
     "title": "Sign in",
@@ -303,17 +263,13 @@
     "deleteFailed": "Failed to delete",
     "placeFailed": "Failed to place",
     "createFailed": "Failed to create",
-    "groupPlaceFailed": "Failed to place group",
     "noSeatsAvailable": "No seats available",
     "placementFailed": "Placement failed",
     "pdfExportFailed": "PDF export failed",
-    "mergeFailed": "Failed to merge",
     "eventNotFound": "Event not found",
     "eventLoadFailed": "Failed to load event",
-    "seatReservedByGroup": "This seat is reserved for a group",
     "nameUpdateFailed": "Failed to update name",
-    "passwordChangeFailed": "Failed to change password",
-    "mergeSourceTargetSame": "Source and target group must be different"
+    "passwordChangeFailed": "Failed to change password"
   },
   "success": {
     "guestPlaced": "Guest placed",

@@ -43,16 +43,6 @@ type FloorPlan struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
-type Group struct {
-	ID        pgtype.UUID        `json:"id"`
-	EventID   pgtype.UUID        `json:"event_id"`
-	Name      string             `json:"name"`
-	Color     string             `json:"color"`
-	SortOrder int32              `json:"sort_order"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
-}
-
 type Jwk struct {
 	ID         string             `json:"id"`
 	PublicKey  string             `json:"publicKey"`
@@ -64,7 +54,6 @@ type Person struct {
 	ID          pgtype.UUID        `json:"id"`
 	EventID     pgtype.UUID        `json:"event_id"`
 	Name        string             `json:"name"`
-	GroupID     pgtype.UUID        `json:"group_id"`
 	TableRef    *string            `json:"table_ref"`
 	SeatRef     *string            `json:"seat_ref"`
 	Parked      bool               `json:"parked"`
@@ -84,15 +73,28 @@ type Session struct {
 	UpdatedAt pgtype.Timestamptz `json:"updatedAt"`
 }
 
+type TwoFactor struct {
+	ID          string             `json:"id"`
+	Secret      string             `json:"secret"`
+	BackupCodes string             `json:"backupCodes"`
+	UserId      string             `json:"userId"`
+	CreatedAt   pgtype.Timestamptz `json:"createdAt"`
+	UpdatedAt   pgtype.Timestamptz `json:"updatedAt"`
+}
+
 type User struct {
-	ID            string             `json:"id"`
-	Name          string             `json:"name"`
-	Email         string             `json:"email"`
-	EmailVerified bool               `json:"emailVerified"`
-	Image         *string            `json:"image"`
-	Role          string             `json:"role"`
-	CreatedAt     pgtype.Timestamptz `json:"createdAt"`
-	UpdatedAt     pgtype.Timestamptz `json:"updatedAt"`
+	ID               string             `json:"id"`
+	Name             string             `json:"name"`
+	Email            string             `json:"email"`
+	EmailVerified    bool               `json:"emailVerified"`
+	Image            *string            `json:"image"`
+	Role             string             `json:"role"`
+	CreatedAt        pgtype.Timestamptz `json:"createdAt"`
+	UpdatedAt        pgtype.Timestamptz `json:"updatedAt"`
+	TwoFactorEnabled bool               `json:"twoFactorEnabled"`
+	Banned           bool               `json:"banned"`
+	BanReason        *string            `json:"banReason"`
+	BanExpires       pgtype.Timestamptz `json:"banExpires"`
 }
 
 type Verification struct {

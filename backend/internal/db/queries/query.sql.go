@@ -15,7 +15,7 @@ const assignSeat = `-- name: AssignSeat :one
 UPDATE persons
 SET table_ref = $2, seat_ref = $3, parked = FALSE, updated_at = NOW()
 WHERE id = $1
-RETURNING id, event_id, name, group_id, table_ref, seat_ref, parked, created_at, updated_at, booked_table
+RETURNING id, event_id, name, table_ref, seat_ref, parked, created_at, updated_at, booked_table
 `
 
 type AssignSeatParams struct {
@@ -31,7 +31,6 @@ func (q *Queries) AssignSeat(ctx context.Context, arg AssignSeatParams) (Person,
 		&i.ID,
 		&i.EventID,
 		&i.Name,
-		&i.GroupID,
 		&i.TableRef,
 		&i.SeatRef,
 		&i.Parked,
@@ -145,48 +144,16 @@ func (q *Queries) CreateFloorPlan(ctx context.Context, eventID pgtype.UUID) (Flo
 	return i, err
 }
 
-const createGroup = `-- name: CreateGroup :one
-
-INSERT INTO groups (event_id, name, color)
-VALUES ($1, $2, $3)
-RETURNING id, event_id, name, color, sort_order, created_at, updated_at
-`
-
-type CreateGroupParams struct {
-	EventID pgtype.UUID `json:"event_id"`
-	Name    string      `json:"name"`
-	Color   string      `json:"color"`
-}
-
-// ============================================================
-// Group queries
-// ============================================================
-func (q *Queries) CreateGroup(ctx context.Context, arg CreateGroupParams) (Group, error) {
-	row := q.db.QueryRow(ctx, createGroup, arg.EventID, arg.Name, arg.Color)
-	var i Group
-	err := row.Scan(
-		&i.ID,
-		&i.EventID,
-		&i.Name,
-		&i.Color,
-		&i.SortOrder,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
 const createPerson = `-- name: CreatePerson :one
 
-INSERT INTO persons (event_id, name, group_id, table_ref, seat_ref, parked, booked_table)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
-RETURNING id, event_id, name, group_id, table_ref, seat_ref, parked, created_at, updated_at, booked_table
+INSERT INTO persons (event_id, name, table_ref, seat_ref, parked, booked_table)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, event_id, name, table_ref, seat_ref, parked, created_at, updated_at, booked_table
 `
 
 type CreatePersonParams struct {
 	EventID     pgtype.UUID `json:"event_id"`
 	Name        string      `json:"name"`
-	GroupID     pgtype.UUID `json:"group_id"`
 	TableRef    *string     `json:"table_ref"`
 	SeatRef     *string     `json:"seat_ref"`
 	Parked      bool        `json:"parked"`
@@ -200,7 +167,6 @@ func (q *Queries) CreatePerson(ctx context.Context, arg CreatePersonParams) (Per
 	row := q.db.QueryRow(ctx, createPerson,
 		arg.EventID,
 		arg.Name,
-		arg.GroupID,
 		arg.TableRef,
 		arg.SeatRef,
 		arg.Parked,
@@ -211,7 +177,6 @@ func (q *Queries) CreatePerson(ctx context.Context, arg CreatePersonParams) (Per
 		&i.ID,
 		&i.EventID,
 		&i.Name,
-		&i.GroupID,
 		&i.TableRef,
 		&i.SeatRef,
 		&i.Parked,
@@ -228,15 +193,6 @@ DELETE FROM events WHERE id = $1
 
 func (q *Queries) DeleteEvent(ctx context.Context, id pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, deleteEvent, id)
-	return err
-}
-
-const deleteGroup = `-- name: DeleteGroup :exec
-DELETE FROM groups WHERE id = $1
-`
-
-func (q *Queries) DeleteGroup(ctx context.Context, id pgtype.UUID) error {
-	_, err := q.db.Exec(ctx, deleteGroup, id)
 	return err
 }
 
@@ -318,27 +274,8 @@ func (q *Queries) GetFloorPlanWithVersion(ctx context.Context, arg GetFloorPlanW
 	return i, err
 }
 
-const getGroup = `-- name: GetGroup :one
-SELECT id, event_id, name, color, sort_order, created_at, updated_at FROM groups WHERE id = $1
-`
-
-func (q *Queries) GetGroup(ctx context.Context, id pgtype.UUID) (Group, error) {
-	row := q.db.QueryRow(ctx, getGroup, id)
-	var i Group
-	err := row.Scan(
-		&i.ID,
-		&i.EventID,
-		&i.Name,
-		&i.Color,
-		&i.SortOrder,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
 const getPerson = `-- name: GetPerson :one
-SELECT id, event_id, name, group_id, table_ref, seat_ref, parked, created_at, updated_at, booked_table FROM persons WHERE id = $1
+SELECT id, event_id, name, table_ref, seat_ref, parked, created_at, updated_at, booked_table FROM persons WHERE id = $1
 `
 
 func (q *Queries) GetPerson(ctx context.Context, id pgtype.UUID) (Person, error) {
@@ -348,7 +285,6 @@ func (q *Queries) GetPerson(ctx context.Context, id pgtype.UUID) (Person, error)
 		&i.ID,
 		&i.EventID,
 		&i.Name,
-		&i.GroupID,
 		&i.TableRef,
 		&i.SeatRef,
 		&i.Parked,
@@ -360,7 +296,7 @@ func (q *Queries) GetPerson(ctx context.Context, id pgtype.UUID) (Person, error)
 }
 
 const getPersonBySeat = `-- name: GetPersonBySeat :one
-SELECT id, event_id, name, group_id, table_ref, seat_ref, parked, created_at, updated_at, booked_table FROM persons
+SELECT id, event_id, name, table_ref, seat_ref, parked, created_at, updated_at, booked_table FROM persons
 WHERE event_id = $1 AND table_ref = $2 AND seat_ref = $3 AND NOT parked
 LIMIT 1
 `
@@ -378,7 +314,6 @@ func (q *Queries) GetPersonBySeat(ctx context.Context, arg GetPersonBySeatParams
 		&i.ID,
 		&i.EventID,
 		&i.Name,
-		&i.GroupID,
 		&i.TableRef,
 		&i.SeatRef,
 		&i.Parked,
@@ -395,9 +330,20 @@ FROM "user"
 WHERE email = $1
 `
 
-func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error) {
+type GetUserByEmailRow struct {
+	ID            string             `json:"id"`
+	Name          string             `json:"name"`
+	Email         string             `json:"email"`
+	EmailVerified bool               `json:"emailVerified"`
+	Image         *string            `json:"image"`
+	Role          string             `json:"role"`
+	CreatedAt     pgtype.Timestamptz `json:"createdAt"`
+	UpdatedAt     pgtype.Timestamptz `json:"updatedAt"`
+}
+
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error) {
 	row := q.db.QueryRow(ctx, getUserByEmail, email)
-	var i User
+	var i GetUserByEmailRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
@@ -418,12 +364,23 @@ FROM "user"
 WHERE id = $1
 `
 
+type GetUserByIDRow struct {
+	ID            string             `json:"id"`
+	Name          string             `json:"name"`
+	Email         string             `json:"email"`
+	EmailVerified bool               `json:"emailVerified"`
+	Image         *string            `json:"image"`
+	Role          string             `json:"role"`
+	CreatedAt     pgtype.Timestamptz `json:"createdAt"`
+	UpdatedAt     pgtype.Timestamptz `json:"updatedAt"`
+}
+
 // ============================================================
 // User queries (BetterAuth user table)
 // ============================================================
-func (q *Queries) GetUserByID(ctx context.Context, id string) (User, error) {
+func (q *Queries) GetUserByID(ctx context.Context, id string) (GetUserByIDRow, error) {
 	row := q.db.QueryRow(ctx, getUserByID, id)
-	var i User
+	var i GetUserByIDRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
@@ -501,83 +458,31 @@ func (q *Queries) ListEventsByUser(ctx context.Context, createdBy string) ([]Eve
 	return items, nil
 }
 
-const listGroupsByEvent = `-- name: ListGroupsByEvent :many
-SELECT id, event_id, name, color, sort_order, created_at, updated_at FROM groups WHERE event_id = $1 ORDER BY sort_order, name
-`
-
-func (q *Queries) ListGroupsByEvent(ctx context.Context, eventID pgtype.UUID) ([]Group, error) {
-	rows, err := q.db.Query(ctx, listGroupsByEvent, eventID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []Group{}
-	for rows.Next() {
-		var i Group
-		if err := rows.Scan(
-			&i.ID,
-			&i.EventID,
-			&i.Name,
-			&i.Color,
-			&i.SortOrder,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const listParkedPersons = `-- name: ListParkedPersons :many
-SELECT p.id, p.event_id, p.name, p.group_id, p.table_ref, p.seat_ref, p.parked, p.created_at, p.updated_at, p.booked_table, g.name AS group_name, g.color AS group_color
-FROM persons p
-LEFT JOIN groups g ON g.id = p.group_id
-WHERE p.event_id = $1 AND p.parked = TRUE
-ORDER BY p.name
+SELECT id, event_id, name, table_ref, seat_ref, parked, created_at, updated_at, booked_table FROM persons
+WHERE event_id = $1 AND parked = TRUE
+ORDER BY name
 `
 
-type ListParkedPersonsRow struct {
-	ID          pgtype.UUID        `json:"id"`
-	EventID     pgtype.UUID        `json:"event_id"`
-	Name        string             `json:"name"`
-	GroupID     pgtype.UUID        `json:"group_id"`
-	TableRef    *string            `json:"table_ref"`
-	SeatRef     *string            `json:"seat_ref"`
-	Parked      bool               `json:"parked"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
-	BookedTable *string            `json:"booked_table"`
-	GroupName   *string            `json:"group_name"`
-	GroupColor  *string            `json:"group_color"`
-}
-
-func (q *Queries) ListParkedPersons(ctx context.Context, eventID pgtype.UUID) ([]ListParkedPersonsRow, error) {
+func (q *Queries) ListParkedPersons(ctx context.Context, eventID pgtype.UUID) ([]Person, error) {
 	rows, err := q.db.Query(ctx, listParkedPersons, eventID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ListParkedPersonsRow{}
+	items := []Person{}
 	for rows.Next() {
-		var i ListParkedPersonsRow
+		var i Person
 		if err := rows.Scan(
 			&i.ID,
 			&i.EventID,
 			&i.Name,
-			&i.GroupID,
 			&i.TableRef,
 			&i.SeatRef,
 			&i.Parked,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.BookedTable,
-			&i.GroupName,
-			&i.GroupColor,
 		); err != nil {
 			return nil, err
 		}
@@ -590,106 +495,28 @@ func (q *Queries) ListParkedPersons(ctx context.Context, eventID pgtype.UUID) ([
 }
 
 const listPersonsByEvent = `-- name: ListPersonsByEvent :many
-SELECT p.id, p.event_id, p.name, p.group_id, p.table_ref, p.seat_ref, p.parked, p.created_at, p.updated_at, p.booked_table, g.name AS group_name, g.color AS group_color
-FROM persons p
-LEFT JOIN groups g ON g.id = p.group_id
-WHERE p.event_id = $1
-ORDER BY p.name
+SELECT id, event_id, name, table_ref, seat_ref, parked, created_at, updated_at, booked_table FROM persons WHERE event_id = $1 ORDER BY name
 `
 
-type ListPersonsByEventRow struct {
-	ID          pgtype.UUID        `json:"id"`
-	EventID     pgtype.UUID        `json:"event_id"`
-	Name        string             `json:"name"`
-	GroupID     pgtype.UUID        `json:"group_id"`
-	TableRef    *string            `json:"table_ref"`
-	SeatRef     *string            `json:"seat_ref"`
-	Parked      bool               `json:"parked"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
-	BookedTable *string            `json:"booked_table"`
-	GroupName   *string            `json:"group_name"`
-	GroupColor  *string            `json:"group_color"`
-}
-
-func (q *Queries) ListPersonsByEvent(ctx context.Context, eventID pgtype.UUID) ([]ListPersonsByEventRow, error) {
+func (q *Queries) ListPersonsByEvent(ctx context.Context, eventID pgtype.UUID) ([]Person, error) {
 	rows, err := q.db.Query(ctx, listPersonsByEvent, eventID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ListPersonsByEventRow{}
+	items := []Person{}
 	for rows.Next() {
-		var i ListPersonsByEventRow
+		var i Person
 		if err := rows.Scan(
 			&i.ID,
 			&i.EventID,
 			&i.Name,
-			&i.GroupID,
 			&i.TableRef,
 			&i.SeatRef,
 			&i.Parked,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.BookedTable,
-			&i.GroupName,
-			&i.GroupColor,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const listPersonsByGroup = `-- name: ListPersonsByGroup :many
-SELECT p.id, p.event_id, p.name, p.group_id, p.table_ref, p.seat_ref, p.parked, p.created_at, p.updated_at, p.booked_table, g.name AS group_name, g.color AS group_color
-FROM persons p
-LEFT JOIN groups g ON g.id = p.group_id
-WHERE p.group_id = $1
-ORDER BY p.name
-`
-
-type ListPersonsByGroupRow struct {
-	ID          pgtype.UUID        `json:"id"`
-	EventID     pgtype.UUID        `json:"event_id"`
-	Name        string             `json:"name"`
-	GroupID     pgtype.UUID        `json:"group_id"`
-	TableRef    *string            `json:"table_ref"`
-	SeatRef     *string            `json:"seat_ref"`
-	Parked      bool               `json:"parked"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
-	BookedTable *string            `json:"booked_table"`
-	GroupName   *string            `json:"group_name"`
-	GroupColor  *string            `json:"group_color"`
-}
-
-func (q *Queries) ListPersonsByGroup(ctx context.Context, groupID pgtype.UUID) ([]ListPersonsByGroupRow, error) {
-	rows, err := q.db.Query(ctx, listPersonsByGroup, groupID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []ListPersonsByGroupRow{}
-	for rows.Next() {
-		var i ListPersonsByGroupRow
-		if err := rows.Scan(
-			&i.ID,
-			&i.EventID,
-			&i.Name,
-			&i.GroupID,
-			&i.TableRef,
-			&i.SeatRef,
-			&i.Parked,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.BookedTable,
-			&i.GroupName,
-			&i.GroupColor,
 		); err != nil {
 			return nil, err
 		}
@@ -702,11 +529,9 @@ func (q *Queries) ListPersonsByGroup(ctx context.Context, groupID pgtype.UUID) (
 }
 
 const listPersonsByTable = `-- name: ListPersonsByTable :many
-SELECT p.id, p.event_id, p.name, p.group_id, p.table_ref, p.seat_ref, p.parked, p.created_at, p.updated_at, p.booked_table, g.name AS group_name, g.color AS group_color
-FROM persons p
-LEFT JOIN groups g ON g.id = p.group_id
-WHERE p.event_id = $1 AND p.table_ref = $2 AND NOT p.parked
-ORDER BY p.seat_ref
+SELECT id, event_id, name, table_ref, seat_ref, parked, created_at, updated_at, booked_table FROM persons
+WHERE event_id = $1 AND table_ref = $2 AND NOT parked
+ORDER BY seat_ref
 `
 
 type ListPersonsByTableParams struct {
@@ -714,43 +539,25 @@ type ListPersonsByTableParams struct {
 	TableRef *string     `json:"table_ref"`
 }
 
-type ListPersonsByTableRow struct {
-	ID          pgtype.UUID        `json:"id"`
-	EventID     pgtype.UUID        `json:"event_id"`
-	Name        string             `json:"name"`
-	GroupID     pgtype.UUID        `json:"group_id"`
-	TableRef    *string            `json:"table_ref"`
-	SeatRef     *string            `json:"seat_ref"`
-	Parked      bool               `json:"parked"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
-	BookedTable *string            `json:"booked_table"`
-	GroupName   *string            `json:"group_name"`
-	GroupColor  *string            `json:"group_color"`
-}
-
-func (q *Queries) ListPersonsByTable(ctx context.Context, arg ListPersonsByTableParams) ([]ListPersonsByTableRow, error) {
+func (q *Queries) ListPersonsByTable(ctx context.Context, arg ListPersonsByTableParams) ([]Person, error) {
 	rows, err := q.db.Query(ctx, listPersonsByTable, arg.EventID, arg.TableRef)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []ListPersonsByTableRow{}
+	items := []Person{}
 	for rows.Next() {
-		var i ListPersonsByTableRow
+		var i Person
 		if err := rows.Scan(
 			&i.ID,
 			&i.EventID,
 			&i.Name,
-			&i.GroupID,
 			&i.TableRef,
 			&i.SeatRef,
 			&i.Parked,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.BookedTable,
-			&i.GroupName,
-			&i.GroupColor,
 		); err != nil {
 			return nil, err
 		}
@@ -768,15 +575,26 @@ FROM "user"
 ORDER BY "createdAt" DESC
 `
 
-func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
+type ListUsersRow struct {
+	ID            string             `json:"id"`
+	Name          string             `json:"name"`
+	Email         string             `json:"email"`
+	EmailVerified bool               `json:"emailVerified"`
+	Image         *string            `json:"image"`
+	Role          string             `json:"role"`
+	CreatedAt     pgtype.Timestamptz `json:"createdAt"`
+	UpdatedAt     pgtype.Timestamptz `json:"updatedAt"`
+}
+
+func (q *Queries) ListUsers(ctx context.Context) ([]ListUsersRow, error) {
 	rows, err := q.db.Query(ctx, listUsers)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	items := []User{}
+	items := []ListUsersRow{}
 	for rows.Next() {
-		var i User
+		var i ListUsersRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
@@ -797,25 +615,11 @@ func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
 	return items, nil
 }
 
-const mergeGroups = `-- name: MergeGroups :exec
-UPDATE persons SET group_id = $2, updated_at = NOW() WHERE group_id = $1
-`
-
-type MergeGroupsParams struct {
-	GroupID   pgtype.UUID `json:"group_id"`
-	GroupID_2 pgtype.UUID `json:"group_id_2"`
-}
-
-func (q *Queries) MergeGroups(ctx context.Context, arg MergeGroupsParams) error {
-	_, err := q.db.Exec(ctx, mergeGroups, arg.GroupID, arg.GroupID_2)
-	return err
-}
-
 const parkPerson = `-- name: ParkPerson :one
 UPDATE persons
 SET table_ref = NULL, seat_ref = NULL, parked = TRUE, updated_at = NOW()
 WHERE id = $1
-RETURNING id, event_id, name, group_id, table_ref, seat_ref, parked, created_at, updated_at, booked_table
+RETURNING id, event_id, name, table_ref, seat_ref, parked, created_at, updated_at, booked_table
 `
 
 func (q *Queries) ParkPerson(ctx context.Context, id pgtype.UUID) (Person, error) {
@@ -825,7 +629,6 @@ func (q *Queries) ParkPerson(ctx context.Context, id pgtype.UUID) (Person, error
 		&i.ID,
 		&i.EventID,
 		&i.Name,
-		&i.GroupID,
 		&i.TableRef,
 		&i.SeatRef,
 		&i.Parked,
@@ -925,61 +728,26 @@ func (q *Queries) UpdateFloorPlanLayout(ctx context.Context, arg UpdateFloorPlan
 	return i, err
 }
 
-const updateGroup = `-- name: UpdateGroup :one
-UPDATE groups
-SET name = $2, color = $3, updated_at = NOW()
-WHERE id = $1
-RETURNING id, event_id, name, color, sort_order, created_at, updated_at
-`
-
-type UpdateGroupParams struct {
-	ID    pgtype.UUID `json:"id"`
-	Name  string      `json:"name"`
-	Color string      `json:"color"`
-}
-
-func (q *Queries) UpdateGroup(ctx context.Context, arg UpdateGroupParams) (Group, error) {
-	row := q.db.QueryRow(ctx, updateGroup, arg.ID, arg.Name, arg.Color)
-	var i Group
-	err := row.Scan(
-		&i.ID,
-		&i.EventID,
-		&i.Name,
-		&i.Color,
-		&i.SortOrder,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
-}
-
 const updatePerson = `-- name: UpdatePerson :one
 UPDATE persons
-SET name = $2, group_id = $3, booked_table = $4, updated_at = NOW()
+SET name = $2, booked_table = $3, updated_at = NOW()
 WHERE id = $1
-RETURNING id, event_id, name, group_id, table_ref, seat_ref, parked, created_at, updated_at, booked_table
+RETURNING id, event_id, name, table_ref, seat_ref, parked, created_at, updated_at, booked_table
 `
 
 type UpdatePersonParams struct {
 	ID          pgtype.UUID `json:"id"`
 	Name        string      `json:"name"`
-	GroupID     pgtype.UUID `json:"group_id"`
 	BookedTable *string     `json:"booked_table"`
 }
 
 func (q *Queries) UpdatePerson(ctx context.Context, arg UpdatePersonParams) (Person, error) {
-	row := q.db.QueryRow(ctx, updatePerson,
-		arg.ID,
-		arg.Name,
-		arg.GroupID,
-		arg.BookedTable,
-	)
+	row := q.db.QueryRow(ctx, updatePerson, arg.ID, arg.Name, arg.BookedTable)
 	var i Person
 	err := row.Scan(
 		&i.ID,
 		&i.EventID,
 		&i.Name,
-		&i.GroupID,
 		&i.TableRef,
 		&i.SeatRef,
 		&i.Parked,

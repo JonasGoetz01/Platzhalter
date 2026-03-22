@@ -10,7 +10,6 @@ type Handlers struct {
 	Event     *EventHandler
 	FloorPlan *FloorPlanHandler
 	Person    *PersonHandler
-	Group     *GroupHandler
 	Admin     *AdminHandler
 	SSE       *SSEHandler
 }
@@ -24,7 +23,6 @@ func NewHandlers(pool *pgxpool.Pool) *Handlers {
 		Event:     NewEventHandler(q, pool),
 		FloorPlan: NewFloorPlanHandler(q),
 		Person:    NewPersonHandler(q, pool, sse),
-		Group:     NewGroupHandler(q, sse),
 		Admin:     NewAdminHandler(q),
 		SSE:       sse,
 	}

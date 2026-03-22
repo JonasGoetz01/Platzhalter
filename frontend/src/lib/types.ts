@@ -95,7 +95,7 @@ export interface LegacyFloorPlanSeat {
   offsetY?: number
 }
 
-// ── Person & Group ──────────────────────────────────────────
+// ── Person ──────────────────────────────────────────────────
 
 export interface Person {
   id: string
@@ -103,19 +103,10 @@ export interface Person {
   name: string
   table_ref: string | null
   seat_ref: string | null
-  group_id: string | null
   booked_table: string | null
   parked: boolean
   created_at: string
   updated_at: string
-}
-
-export interface Group {
-  id: string
-  event_id: string
-  name: string
-  color: string
-  created_at: string
 }
 
 export interface User {

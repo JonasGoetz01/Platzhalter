@@ -73,68 +73,33 @@ RETURNING *;
 SELECT * FROM floor_plans WHERE event_id = $1 AND version = $2;
 
 -- ============================================================
--- Group queries
--- ============================================================
-
--- name: CreateGroup :one
-INSERT INTO groups (event_id, name, color)
-VALUES ($1, $2, $3)
-RETURNING *;
-
--- name: GetGroup :one
-SELECT * FROM groups WHERE id = $1;
-
--- name: ListGroupsByEvent :many
-SELECT * FROM groups WHERE event_id = $1 ORDER BY sort_order, name;
-
--- name: UpdateGroup :one
-UPDATE groups
-SET name = $2, color = $3, updated_at = NOW()
-WHERE id = $1
-RETURNING *;
-
--- name: DeleteGroup :exec
-DELETE FROM groups WHERE id = $1;
-
--- name: MergeGroups :exec
-UPDATE persons SET group_id = $2, updated_at = NOW() WHERE group_id = $1;
-
--- ============================================================
 -- Person queries
 -- ============================================================
 
 -- name: CreatePerson :one
-INSERT INTO persons (event_id, name, group_id, table_ref, seat_ref, parked, booked_table)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+INSERT INTO persons (event_id, name, table_ref, seat_ref, parked, booked_table)
+VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING *;
 
 -- name: GetPerson :one
 SELECT * FROM persons WHERE id = $1;
 
 -- name: ListPersonsByEvent :many
-SELECT p.*, g.name AS group_name, g.color AS group_color
-FROM persons p
-LEFT JOIN groups g ON g.id = p.group_id
-WHERE p.event_id = $1
-ORDER BY p.name;
+SELECT * FROM persons WHERE event_id = $1 ORDER BY name;
 
 -- name: ListPersonsByTable :many
-SELECT p.*, g.name AS group_name, g.color AS group_color
-FROM persons p
-LEFT JOIN groups g ON g.id = p.group_id
-WHERE p.event_id = $1 AND p.table_ref = $2 AND NOT p.parked
-ORDER BY p.seat_ref;
+SELECT * FROM persons
+WHERE event_id = $1 AND table_ref = $2 AND NOT parked
+ORDER BY seat_ref;
 
 -- name: ListParkedPersons :many
-SELECT p.*, g.name AS group_name, g.color AS group_color
-FROM persons p
-LEFT JOIN groups g ON g.id = p.group_id
-WHERE p.event_id = $1 AND p.parked = TRUE
-ORDER BY p.name;
+SELECT * FROM persons
+WHERE event_id = $1 AND parked = TRUE
+ORDER BY name;
 
 -- name: UpdatePerson :one
 UPDATE persons
-SET name = $2, group_id = $3, booked_table = $4, updated_at = NOW()
+SET name = $2, booked_table = $3, updated_at = NOW()
 WHERE id = $1
 RETURNING *;
 
@@ -188,10 +153,3 @@ LIMIT 1;
 UPDATE persons
 SET table_ref = NULL, seat_ref = NULL, parked = TRUE, updated_at = NOW()
 WHERE id = ANY($1::uuid[]);
-
--- name: ListPersonsByGroup :many
-SELECT p.*, g.name AS group_name, g.color AS group_color
-FROM persons p
-LEFT JOIN groups g ON g.id = p.group_id
-WHERE p.group_id = $1
-ORDER BY p.name;

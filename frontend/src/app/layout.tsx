@@ -1,20 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Geist } from "next/font/google";
-import { DM_Serif_Display, IBM_Plex_Mono } from "next/font/google";
+import { Manrope, Inter, IBM_Plex_Mono } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getLocale } from "next-intl/server";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-sans",
+const manrope = Manrope({
+  variable: "--font-heading",
   subsets: ["latin"],
   display: "swap",
 });
 
-const dmSerifDisplay = DM_Serif_Display({
-  variable: "--font-dm-serif-display",
-  weight: "400",
+const inter = Inter({
+  variable: "--font-sans",
   subsets: ["latin"],
   display: "swap",
 });
@@ -41,7 +39,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#c8a96e",
+  themeColor: "#faf9f5",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -59,7 +57,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
-      className={`${geistSans.variable} ${dmSerifDisplay.variable} ${ibmPlexMono.variable} dark h-full antialiased`}
+      className={`${inter.variable} ${manrope.variable} ${ibmPlexMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <NextIntlClientProvider messages={messages}>

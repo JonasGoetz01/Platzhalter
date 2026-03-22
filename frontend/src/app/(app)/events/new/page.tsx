@@ -63,7 +63,7 @@ export default function NewEventPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-4 md:p-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" render={<Link href="/events" />}>
           <ArrowLeftIcon />

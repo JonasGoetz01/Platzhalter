@@ -5,7 +5,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jgotz/platzhalter/backend/internal/db/queries"
 )
@@ -22,7 +21,6 @@ func NewPersonHandler(q *queries.Queries, pool *pgxpool.Pool, sse *SSEHandler) *
 
 type createPersonRequest struct {
 	Name        string  `json:"name"`
-	GroupID     *string `json:"group_id"`
 	TableRef    *string `json:"table_ref"`
 	SeatRef     *string `json:"seat_ref"`
 	BookedTable *string `json:"booked_table"`
@@ -56,23 +54,11 @@ func (h *PersonHandler) Create(c *fiber.Ctx) error {
 		})
 	}
 
-	var groupID pgtype.UUID
-	if req.GroupID != nil {
-		groupID, err = parseUUID(*req.GroupID)
-		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "invalid group ID",
-				"code":  "BAD_REQUEST",
-			})
-		}
-	}
-
 	parked := req.TableRef == nil || req.SeatRef == nil
 
 	person, err := h.q.CreatePerson(c.Context(), queries.CreatePersonParams{
 		EventID:     eventID,
 		Name:        req.Name,
-		GroupID:     groupID,
 		TableRef:    req.TableRef,
 		SeatRef:     req.SeatRef,
 		Parked:      parked,
@@ -114,7 +100,6 @@ func (h *PersonHandler) List(c *fiber.Ctx) error {
 
 type updatePersonRequest struct {
 	Name        string  `json:"name"`
-	GroupID     *string `json:"group_id"`
 	BookedTable *string `json:"booked_table"`
 }
 
@@ -146,21 +131,9 @@ func (h *PersonHandler) Update(c *fiber.Ctx) error {
 		})
 	}
 
-	var groupID pgtype.UUID
-	if req.GroupID != nil {
-		groupID, err = parseUUID(*req.GroupID)
-		if err != nil {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "invalid group ID",
-				"code":  "BAD_REQUEST",
-			})
-		}
-	}
-
 	person, err := h.q.UpdatePerson(c.Context(), queries.UpdatePersonParams{
 		ID:          id,
 		Name:        req.Name,
-		GroupID:     groupID,
 		BookedTable: req.BookedTable,
 	})
 	if err != nil {

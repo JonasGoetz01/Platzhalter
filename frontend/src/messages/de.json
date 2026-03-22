@@ -26,7 +26,11 @@
     "signOut": "Abmelden",
     "userMenu": "Benutzermenü",
     "navigation": "Navigation",
-    "user": "Benutzer"
+    "user": "Benutzer",
+    "home": "Start",
+    "guests": "Gäste",
+    "planner": "Planer",
+    "summary": "Übersicht"
   },
   "floorplan": {
     "toolbar": {
@@ -109,6 +113,14 @@
       "seats": "{count} Plätze",
       "rotate": "Drehen",
       "delete": "Löschen"
+    },
+    "setup": {
+      "title": "Tische einrichten",
+      "description": "Legen Sie die Anzahl der Tische und Plätze fest.",
+      "tableCount": "Anzahl Tische",
+      "seatsPerTable": "Plätze pro Tisch",
+      "create": "Tische erstellen",
+      "addTable": "Tisch hinzufügen"
     }
   },
   "events": {
@@ -124,7 +136,7 @@
     "noDate": "Kein Datum",
     "editEvent": "Bearbeiten",
     "deleteEvent": "Veranstaltung löschen?",
-    "deleteEventDescription": "Diese Aktion kann nicht rückgängig gemacht werden. Alle zugehörigen Daten (Sitzplan, Gäste, Gruppen) werden unwiderruflich gelöscht.",
+    "deleteEventDescription": "Diese Aktion kann nicht rückgängig gemacht werden. Alle zugehörigen Daten (Sitzplan, Gäste) werden unwiderruflich gelöscht.",
     "deleteConfirm": "Endgültig löschen",
     "editTitle": "Veranstaltung bearbeiten",
     "editDescription": "Ändern Sie die Details der Veranstaltung.",
@@ -139,7 +151,7 @@
     "editLayout": "Tischplan bearbeiten",
     "seating": "Platzierung",
     "guestList": "Gästeliste",
-    "groups": "Gruppen",
+    "guestList": "Gästeliste",
     "pdfExport": "PDF Export",
     "pdfExported": "PDF exportiert",
     "floorplan": "Tischplan",
@@ -153,7 +165,8 @@
     "namePlaceholder": "z.B. Hochzeit Müller",
     "descriptionOptional": "Beschreibung (optional)",
     "descriptionPlaceholder": "Zusätzliche Informationen...",
-    "eventCreated": "Veranstaltung erstellt"
+    "eventCreated": "Veranstaltung erstellt",
+    "startPlacement": "Platzierung starten"
   },
   "guests": {
     "title": "Gästeliste",
@@ -170,7 +183,6 @@
     "namePlaceholder": "z.B. Max Mustermann",
     "bookedTable": "Gebuchter Tisch",
     "bookedTablePlaceholder": "z.B. Tisch 1",
-    "group": "Gruppe",
     "seat": "Platz",
     "placement": "Platzierung",
     "notSeated": "Nicht platziert",
@@ -180,59 +192,7 @@
     "guestRemoved": "Gast entfernt",
     "deleteGuest": "Gast entfernen?",
     "deleteGuestDescription": "{name} wird unwiderruflich von der Gästeliste entfernt.",
-    "removeConfirm": "Entfernen",
-    "select": "Auswählen",
-    "selectedCount": "{count} ausgewählt",
-    "assignGroup": "Gruppe",
-    "noGroup": "Keine Gruppe",
-    "groupAssigned": "Zu {group} zugewiesen",
-    "groupRemoved": "Aus Gruppe entfernt",
-    "guestsDeleted": "{count} entfernt",
-    "notGrouped": "Nicht gruppiert",
-    "selectAll": "Alle auswählen",
-    "correctTable": "Richtiger Tisch",
-    "wrongTable": "Falscher Tisch",
-    "actualTable": "an {table}",
-    "bookedLabel": "gebucht: {table}",
-    "bulkDeleteConfirm": "Möchten Sie {count} Gäste wirklich löschen?",
-    "noUngrouped": "Keine ungruppierten Gäste"
-  },
-  "groups": {
-    "title": "Gruppen",
-    "subtitle": "Organisieren Sie Gäste in Gruppen für die Tischzuweisung.",
-    "newGroup": "Neue Gruppe",
-    "createFirstGroup": "Erste Gruppe erstellen",
-    "noGroups": "Noch keine Gruppen erstellt.",
-    "merge": "Zusammenführen",
-    "editGroup": "Gruppe bearbeiten",
-    "newGroupTitle": "Neue Gruppe",
-    "editGroupDescription": "Ändern Sie den Namen oder die Farbe der Gruppe.",
-    "newGroupDescription": "Erstellen Sie eine neue Gruppe für die Tischzuweisung.",
-    "namePlaceholder": "z.B. Familie Müller",
-    "color": "Farbe",
-    "members": "{count} {count, plural, one {Mitglied} other {Mitglieder}}",
-    "more": "+{count} weitere",
-    "groupUpdated": "Gruppe aktualisiert",
-    "groupCreated": "Gruppe erstellt",
-    "groupDeleted": "Gruppe gelöscht",
-    "deleteGroup": "Gruppe löschen?",
-    "deleteGroupDescription": "Die Gruppe \"{name}\" wird gelöscht. Mitglieder werden keiner Gruppe mehr zugewiesen.",
-    "mergeTitle": "Gruppen zusammenführen",
-    "mergeDescription": "Alle Mitglieder der Quellgruppe werden zur Zielgruppe verschoben. Die Quellgruppe wird gelöscht.",
-    "sourceGroup": "Quellgruppe (wird gelöscht)",
-    "targetGroup": "Zielgruppe (bleibt bestehen)",
-    "selectGroup": "Gruppe wählen...",
-    "merged": "Gruppen zusammengeführt",
-    "manageMembers": "Mitglieder",
-    "addMembers": "Mitglieder hinzufügen",
-    "searchUngrouped": "Nicht gruppierte suchen...",
-    "selectAllVisible": "Alle sichtbaren auswählen",
-    "removeMember": "Entfernen",
-    "done": "Fertig",
-    "memberAdded": "{name} hinzugefügt",
-    "memberRemoved": "{name} entfernt",
-    "membersAdded": "{count} hinzugefügt",
-    "currentMembers": "Mitglieder ({count})"
+    "removeConfirm": "Entfernen"
   },
   "login": {
     "title": "Anmelden",
@@ -303,17 +263,13 @@
     "deleteFailed": "Fehler beim Löschen",
     "placeFailed": "Fehler beim Platzieren",
     "createFailed": "Fehler beim Erstellen",
-    "groupPlaceFailed": "Fehler bei der Gruppenplatzierung",
     "noSeatsAvailable": "Keine Plätze verfügbar",
     "placementFailed": "Platzierung fehlgeschlagen",
     "pdfExportFailed": "Fehler beim PDF-Export",
-    "mergeFailed": "Fehler beim Zusammenführen",
     "eventNotFound": "Veranstaltung nicht gefunden",
     "eventLoadFailed": "Fehler beim Laden der Veranstaltung",
-    "seatReservedByGroup": "Dieser Platz ist für eine Gruppe reserviert",
     "nameUpdateFailed": "Fehler beim Aktualisieren des Namens",
-    "passwordChangeFailed": "Fehler beim Ändern des Passworts",
-    "mergeSourceTargetSame": "Quell- und Zielgruppe dürfen nicht identisch sein"
+    "passwordChangeFailed": "Fehler beim Ändern des Passworts"
   },
   "success": {
     "guestPlaced": "Gast platziert",

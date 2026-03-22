@@ -41,27 +41,5 @@ processes:
     availability:
       restart: "on_failure"
 
-  # ===== Application =====
-
-  backend:
-    command: "air"
-    working_dir: "./backend"
-    depends_on:
-      migrate:
-        condition: process_completed_successfully
-    availability:
-      restart: "on_failure"
-
-  frontend:
-    command: "bun dev --port ${FRONTEND_PORT}"
-    working_dir: "./frontend"
-    depends_on:
-      backend:
-        condition: process_started
-    availability:
-      restart: "on_failure"
-
-  # ===== Devbox-generated (keep disabled) =====
-
   postgresql:
     disabled: true

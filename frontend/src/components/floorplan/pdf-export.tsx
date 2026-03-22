@@ -8,7 +8,7 @@ import {
   StyleSheet,
   pdf,
 } from "@react-pdf/renderer"
-import type { Event, FloorPlanLayout, Person, Group } from "@/lib/types"
+import type { Event, FloorPlanLayout, Person } from "@/lib/types"
 import { computeSeatsForTable, getTotalSeatCount } from "@/lib/floorplan"
 
 const GOLD = "#c8a96e"
@@ -86,10 +86,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: NACHT,
   },
-  groupName: {
-    fontSize: 8,
-    color: GOLD,
-  },
   emptyText: {
     fontSize: 9,
     color: "#ccc",
@@ -147,16 +143,13 @@ interface PDFDocumentProps {
   event: Event
   layout: FloorPlanLayout
   persons: Person[]
-  groups: Group[]
 }
 
 function SeatingPlanDocument({
   event,
   layout,
   persons,
-  groups,
 }: PDFDocumentProps) {
-  const groupMap = new Map(groups.map((g) => [g.id, g]))
   const personByTableSeat = new Map<string, Person>()
   const unassigned: Person[] = []
 
@@ -225,9 +218,6 @@ function SeatingPlanDocument({
                   const person = personByTableSeat.get(
                     `${table.id}:${seat.seatRef}`
                   )
-                  const group = person?.group_id
-                    ? groupMap.get(person.group_id)
-                    : null
 
                   return (
                     <View key={seat.id} style={styles.seatRow}>
@@ -287,15 +277,13 @@ function SeatingPlanDocument({
 export async function generateSeatingPDF(
   event: Event,
   layout: FloorPlanLayout,
-  persons: Person[],
-  groups: Group[]
+  persons: Person[]
 ): Promise<Blob> {
   const doc = (
     <SeatingPlanDocument
       event={event}
       layout={layout}
       persons={persons}
-      groups={groups}
     />
   )
   return pdf(doc).toBlob()
