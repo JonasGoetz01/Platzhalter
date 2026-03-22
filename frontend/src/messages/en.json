@@ -230,7 +230,18 @@
     "submit": "Create account",
     "error": "Registration failed.",
     "hasAccount": "Already have an account?",
-    "login": "Sign in"
+    "login": "Sign in",
+    "checkEmail": "Check your email",
+    "checkEmailDescription": "We sent a verification link to your email address. Please click it to activate your account."
+  },
+  "verifyEmail": {
+    "title": "Email verification",
+    "verifying": "Verifying your email...",
+    "verified": "Email verified",
+    "verifiedDescription": "Your email has been verified successfully. You can now sign in.",
+    "error": "Verification failed",
+    "errorDescription": "The verification link is invalid or has expired. Please try registering again.",
+    "backToLogin": "Back to sign in"
   },
   "org": {
     "create": "Create organization",
@@ -272,6 +283,11 @@
     "acceptingInvitation": "Accepting invitation...",
     "invitationAccepted": "Invitation accepted",
     "invitationError": "Failed to accept invitation",
+    "invitationMissingId": "No invitation ID provided.",
+    "loginRequiredForInvitation": "You need to sign in or create an account to accept this invitation.",
+    "loginToAccept": "Sign in",
+    "registerToAccept": "Create account",
+    "goToEvents": "Go to events",
     "organizations": "Organizations"
   },
   "profile": {

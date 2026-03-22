@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import {
@@ -19,12 +19,16 @@ import { Loader2Icon } from "lucide-react"
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const t = useTranslations("login")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [step, setStep] = useState<"credentials" | "two-factor">("credentials")
   const [twoFactorMode, setTwoFactorMode] = useState<"totp" | "backup">("totp")
   const [code, setCode] = useState("")
+
+  const inviteId = searchParams.get("invite")
+  const redirectTo = inviteId ? `/accept-invitation?id=${inviteId}` : "/"
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -52,7 +56,7 @@ export default function LoginPage() {
       return
     }
 
-    router.replace("/")
+    router.replace(redirectTo)
   }
 
   async function handleTwoFactor(e: React.FormEvent) {
@@ -71,7 +75,7 @@ export default function LoginPage() {
         return
       }
 
-      router.replace("/")
+      router.replace(redirectTo)
     } catch {
       setError(t("invalidCode"))
       setLoading(false)
@@ -206,7 +210,7 @@ export default function LoginPage() {
           </Button>
           <p className="text-center text-sm text-muted-foreground">
             {t("noAccount")}{" "}
-            <Link href="/register" className="text-primary hover:underline">
+            <Link href={inviteId ? `/register?invite=${inviteId}` : "/register"} className="text-primary hover:underline">
               {t("register")}
             </Link>
           </p>

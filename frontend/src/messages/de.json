@@ -230,7 +230,18 @@
     "submit": "Konto erstellen",
     "error": "Registrierung fehlgeschlagen.",
     "hasAccount": "Bereits ein Konto?",
-    "login": "Anmelden"
+    "login": "Anmelden",
+    "checkEmail": "Prüfen Sie Ihre E-Mails",
+    "checkEmailDescription": "Wir haben einen Bestätigungslink an Ihre E-Mail-Adresse gesendet. Bitte klicken Sie darauf, um Ihr Konto zu aktivieren."
+  },
+  "verifyEmail": {
+    "title": "E-Mail-Bestätigung",
+    "verifying": "Ihre E-Mail wird überprüft...",
+    "verified": "E-Mail bestätigt",
+    "verifiedDescription": "Ihre E-Mail-Adresse wurde erfolgreich bestätigt. Sie können sich jetzt anmelden.",
+    "error": "Bestätigung fehlgeschlagen",
+    "errorDescription": "Der Bestätigungslink ist ungültig oder abgelaufen. Bitte versuchen Sie, sich erneut zu registrieren.",
+    "backToLogin": "Zurück zur Anmeldung"
   },
   "org": {
     "create": "Organisation erstellen",
@@ -272,6 +283,11 @@
     "acceptingInvitation": "Einladung wird angenommen...",
     "invitationAccepted": "Einladung angenommen",
     "invitationError": "Einladung konnte nicht angenommen werden",
+    "invitationMissingId": "Keine Einladungs-ID angegeben.",
+    "loginRequiredForInvitation": "Sie müssen sich anmelden oder ein Konto erstellen, um diese Einladung anzunehmen.",
+    "loginToAccept": "Anmelden",
+    "registerToAccept": "Konto erstellen",
+    "goToEvents": "Zu Veranstaltungen",
     "organizations": "Organisationen"
   },
   "profile": {

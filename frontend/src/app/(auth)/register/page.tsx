@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import {
@@ -15,13 +15,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { signUp } from "@/lib/auth"
-import { Loader2Icon } from "lucide-react"
+import { Loader2Icon, MailIcon } from "lucide-react"
 
 export default function RegisterPage() {
-  const router = useRouter()
+  const searchParams = useSearchParams()
   const t = useTranslations("register")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [registered, setRegistered] = useState(false)
+
+  const inviteId = searchParams.get("invite")
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -52,7 +55,27 @@ export default function RegisterPage() {
       return
     }
 
-    router.replace("/organizations/new")
+    setLoading(false)
+    setRegistered(true)
+  }
+
+  if (registered) {
+    return (
+      <Card className="w-full">
+        <CardHeader className="items-center text-center">
+          <MailIcon className="mb-2 size-10 text-muted-foreground" />
+          <CardTitle className="text-xl">{t("checkEmail")}</CardTitle>
+          <CardDescription>{t("checkEmailDescription")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link href={inviteId ? `/login?invite=${inviteId}` : "/login"} className="block">
+            <Button variant="outline" className="w-full">
+              {t("login")}
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
@@ -124,7 +147,7 @@ export default function RegisterPage() {
           </Button>
           <p className="text-center text-sm text-muted-foreground">
             {t("hasAccount")}{" "}
-            <Link href="/login" className="text-primary hover:underline">
+            <Link href={inviteId ? `/login?invite=${inviteId}` : "/login"} className="text-primary hover:underline">
               {t("login")}
             </Link>
           </p>
