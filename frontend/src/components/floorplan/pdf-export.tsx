@@ -235,16 +235,9 @@ function SeatingPlanDocument({
                         Platz {seat.label}
                       </Text>
                       {person ? (
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.personName}>
-                            {person.name}
-                          </Text>
-                          {group && (
-                            <Text style={styles.groupName}>
-                              {group.name}
-                            </Text>
-                          )}
-                        </View>
+                        <Text style={styles.personName}>
+                          {person.name}
+                        </Text>
                       ) : (
                         <Text style={styles.emptyText}>— frei —</Text>
                       )}
