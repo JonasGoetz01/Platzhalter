@@ -1,7 +1,10 @@
 package handler
 
 import (
+	"errors"
+
 	"github.com/gofiber/fiber/v2"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jgotz/platzhalter/backend/internal/db/queries"
 )
 
@@ -33,8 +36,38 @@ func (h *PersonHandler) BulkAssign(c *fiber.Ctx) error {
 		})
 	}
 
+	// Validate first person to get event ID and check ownership
+	firstID, err := parseUUID(req.Assignments[0].PersonID)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "invalid person_id: " + req.Assignments[0].PersonID,
+			"code":  "BAD_REQUEST",
+		})
+	}
+	firstPerson, err := h.q.GetPerson(c.Context(), firstID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "person not found: " + req.Assignments[0].PersonID,
+			"code":  "NOT_FOUND",
+		})
+	}
+	if resp := checkEventOwnership(c, h.q, firstPerson.EventID); resp != nil {
+		return resp
+	}
+	eventID := uuidToString(firstPerson.EventID)
+
+	// Begin transaction for atomicity
+	tx, err := h.pool.Begin(c.Context())
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "failed to begin transaction",
+			"code":  "INTERNAL_ERROR",
+		})
+	}
+	defer tx.Rollback(c.Context())
+
+	qtx := queries.New(tx)
 	results := make([]any, 0, len(req.Assignments))
-	var eventID string
 
 	for _, a := range req.Assignments {
 		id, err := parseUUID(a.PersonID)
@@ -45,12 +78,19 @@ func (h *PersonHandler) BulkAssign(c *fiber.Ctx) error {
 			})
 		}
 
-		person, err := h.q.AssignSeat(c.Context(), queries.AssignSeatParams{
+		person, err := qtx.AssignSeat(c.Context(), queries.AssignSeatParams{
 			ID:       id,
 			TableRef: &a.TableRef,
 			SeatRef:  &a.SeatRef,
 		})
 		if err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+				return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+					"error": "seat already occupied",
+					"code":  "CONFLICT",
+				})
+			}
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"error": "failed to assign seat for person: " + a.PersonID,
 				"code":  "INTERNAL_ERROR",
@@ -58,14 +98,13 @@ func (h *PersonHandler) BulkAssign(c *fiber.Ctx) error {
 		}
 
 		results = append(results, person)
+	}
 
-		// Get event ID for SSE broadcast from first person
-		if eventID == "" {
-			full, _ := h.q.GetPerson(c.Context(), id)
-			if full.EventID.Valid {
-				eventID = uuidToString(full.EventID)
-			}
-		}
+	if err := tx.Commit(c.Context()); err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "failed to commit transaction",
+			"code":  "INTERNAL_ERROR",
+		})
 	}
 
 	if eventID != "" {

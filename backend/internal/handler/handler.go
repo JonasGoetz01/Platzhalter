@@ -23,7 +23,7 @@ func NewHandlers(pool *pgxpool.Pool) *Handlers {
 		Health:    NewHealthHandler(pool),
 		Event:     NewEventHandler(q, pool),
 		FloorPlan: NewFloorPlanHandler(q),
-		Person:    NewPersonHandler(q, sse),
+		Person:    NewPersonHandler(q, pool, sse),
 		Group:     NewGroupHandler(q, sse),
 		Admin:     NewAdminHandler(q),
 		SSE:       sse,

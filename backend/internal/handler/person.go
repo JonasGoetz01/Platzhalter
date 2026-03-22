@@ -1,18 +1,23 @@
 package handler
 
 import (
+	"errors"
+
 	"github.com/gofiber/fiber/v2"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jgotz/platzhalter/backend/internal/db/queries"
 )
 
 type PersonHandler struct {
-	q   *queries.Queries
-	sse *SSEHandler
+	q    *queries.Queries
+	pool *pgxpool.Pool
+	sse  *SSEHandler
 }
 
-func NewPersonHandler(q *queries.Queries, sse *SSEHandler) *PersonHandler {
-	return &PersonHandler{q: q, sse: sse}
+func NewPersonHandler(q *queries.Queries, pool *pgxpool.Pool, sse *SSEHandler) *PersonHandler {
+	return &PersonHandler{q: q, pool: pool, sse: sse}
 }
 
 type createPersonRequest struct {
@@ -30,6 +35,10 @@ func (h *PersonHandler) Create(c *fiber.Ctx) error {
 			"error": "invalid event ID",
 			"code":  "BAD_REQUEST",
 		})
+	}
+
+	if resp := checkEventOwnership(c, h.q, eventID); resp != nil {
+		return resp
 	}
 
 	var req createPersonRequest
@@ -89,6 +98,10 @@ func (h *PersonHandler) List(c *fiber.Ctx) error {
 		})
 	}
 
+	if resp := checkEventOwnership(c, h.q, eventID); resp != nil {
+		return resp
+	}
+
 	persons, err := h.q.ListPersonsByEvent(c.Context(), eventID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -112,6 +125,17 @@ func (h *PersonHandler) Update(c *fiber.Ctx) error {
 			"error": "invalid person ID",
 			"code":  "BAD_REQUEST",
 		})
+	}
+
+	existing, err := h.q.GetPerson(c.Context(), id)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "person not found",
+			"code":  "NOT_FOUND",
+		})
+	}
+	if resp := checkEventOwnership(c, h.q, existing.EventID); resp != nil {
+		return resp
 	}
 
 	var req updatePersonRequest
@@ -162,6 +186,17 @@ func (h *PersonHandler) AssignSeat(c *fiber.Ctx) error {
 		})
 	}
 
+	existing, err := h.q.GetPerson(c.Context(), id)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "person not found",
+			"code":  "NOT_FOUND",
+		})
+	}
+	if resp := checkEventOwnership(c, h.q, existing.EventID); resp != nil {
+		return resp
+	}
+
 	var req assignSeatRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -176,16 +211,21 @@ func (h *PersonHandler) AssignSeat(c *fiber.Ctx) error {
 		SeatRef:  &req.SeatRef,
 	})
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
+				"error": "seat already occupied",
+				"code":  "CONFLICT",
+			})
+		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "failed to assign seat",
 			"code":  "INTERNAL_ERROR",
 		})
 	}
 
-	// Get the person's event ID for SSE broadcast
-	full, _ := h.q.GetPerson(c.Context(), id)
-	if full.EventID.Valid {
-		h.sse.Broadcast(uuidToString(full.EventID), "seat_assigned", person)
+	if existing.EventID.Valid {
+		h.sse.Broadcast(uuidToString(existing.EventID), "seat_assigned", person)
 	}
 
 	return c.JSON(person)
@@ -200,6 +240,17 @@ func (h *PersonHandler) Park(c *fiber.Ctx) error {
 		})
 	}
 
+	existing, err := h.q.GetPerson(c.Context(), id)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "person not found",
+			"code":  "NOT_FOUND",
+		})
+	}
+	if resp := checkEventOwnership(c, h.q, existing.EventID); resp != nil {
+		return resp
+	}
+
 	person, err := h.q.ParkPerson(c.Context(), id)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
@@ -208,9 +259,8 @@ func (h *PersonHandler) Park(c *fiber.Ctx) error {
 		})
 	}
 
-	full, _ := h.q.GetPerson(c.Context(), id)
-	if full.EventID.Valid {
-		h.sse.Broadcast(uuidToString(full.EventID), "person_parked", person)
+	if existing.EventID.Valid {
+		h.sse.Broadcast(uuidToString(existing.EventID), "person_parked", person)
 	}
 
 	return c.JSON(person)
@@ -225,8 +275,17 @@ func (h *PersonHandler) Delete(c *fiber.Ctx) error {
 		})
 	}
 
-	// Get person before delete for SSE
-	person, _ := h.q.GetPerson(c.Context(), id)
+	// Get person before delete for SSE and ownership check
+	person, err := h.q.GetPerson(c.Context(), id)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "person not found",
+			"code":  "NOT_FOUND",
+		})
+	}
+	if resp := checkEventOwnership(c, h.q, person.EventID); resp != nil {
+		return resp
+	}
 
 	if err := h.q.DeletePerson(c.Context(), id); err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
@@ -272,6 +331,31 @@ func (h *PersonHandler) Swap(c *fiber.Ctx) error {
 		})
 	}
 
+	personA, err := h.q.GetPerson(c.Context(), idA)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "person A not found",
+			"code":  "NOT_FOUND",
+		})
+	}
+	personB, err := h.q.GetPerson(c.Context(), idB)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "person B not found",
+			"code":  "NOT_FOUND",
+		})
+	}
+	if uuidToString(personA.EventID) != uuidToString(personB.EventID) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "persons must belong to the same event",
+			"code":  "VALIDATION_ERROR",
+		})
+	}
+
+	if resp := checkEventOwnership(c, h.q, personA.EventID); resp != nil {
+		return resp
+	}
+
 	if err := h.q.SwapSeats(c.Context(), queries.SwapSeatsParams{
 		ID:   idA,
 		ID_2: idB,
@@ -282,7 +366,6 @@ func (h *PersonHandler) Swap(c *fiber.Ctx) error {
 		})
 	}
 
-	personA, _ := h.q.GetPerson(c.Context(), idA)
 	if personA.EventID.Valid {
 		h.sse.Broadcast(uuidToString(personA.EventID), "seats_swapped", fiber.Map{
 			"person_a_id": req.PersonAID,

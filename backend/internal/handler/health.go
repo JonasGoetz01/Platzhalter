@@ -16,6 +16,8 @@ func NewHealthHandler(db *pgxpool.Pool) *HealthHandler {
 func (h *HealthHandler) HealthCheck(c *fiber.Ctx) error {
 	if err := h.db.Ping(c.Context()); err != nil {
 		return c.Status(fiber.StatusServiceUnavailable).JSON(fiber.Map{
+			"error":    "database health check failed",
+			"code":     "SERVICE_UNAVAILABLE",
 			"status":   "unhealthy",
 			"database": "disconnected",
 		})

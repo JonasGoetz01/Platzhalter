@@ -46,6 +46,10 @@ func (h *FloorPlanHandler) Get(c *fiber.Ctx) error {
 		})
 	}
 
+	if resp := checkEventOwnership(c, h.q, eventID); resp != nil {
+		return resp
+	}
+
 	fp, err := h.q.GetFloorPlan(c.Context(), eventID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
@@ -68,6 +72,10 @@ func (h *FloorPlanHandler) Update(c *fiber.Ctx) error {
 			"error": "invalid event ID",
 			"code":  "BAD_REQUEST",
 		})
+	}
+
+	if resp := checkEventOwnership(c, h.q, eventID); resp != nil {
+		return resp
 	}
 
 	var req updateFloorPlanRequest

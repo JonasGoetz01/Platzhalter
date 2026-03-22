@@ -469,6 +469,38 @@ func (q *Queries) ListEvents(ctx context.Context) ([]Event, error) {
 	return items, nil
 }
 
+const listEventsByUser = `-- name: ListEventsByUser :many
+SELECT id, name, event_date, description, created_by, created_at, updated_at FROM events WHERE created_by = $1 ORDER BY event_date DESC NULLS LAST, created_at DESC
+`
+
+func (q *Queries) ListEventsByUser(ctx context.Context, createdBy string) ([]Event, error) {
+	rows, err := q.db.Query(ctx, listEventsByUser, createdBy)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Event{}
+	for rows.Next() {
+		var i Event
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.EventDate,
+			&i.Description,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listGroupsByEvent = `-- name: ListGroupsByEvent :many
 SELECT id, event_id, name, color, sort_order, created_at, updated_at FROM groups WHERE event_id = $1 ORDER BY sort_order, name
 `

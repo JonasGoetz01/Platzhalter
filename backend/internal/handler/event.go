@@ -32,9 +32,16 @@ func (h *EventHandler) Create(c *fiber.Ctx) error {
 		})
 	}
 
-	if req.Name == "" {
+	if len(req.Name) == 0 || len(req.Name) > 255 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "name is required",
+			"error": "name must be 1-255 characters",
+			"code":  "VALIDATION_ERROR",
+		})
+	}
+
+	if len(req.Description) > 5000 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "description must be at most 5000 characters",
 			"code":  "VALIDATION_ERROR",
 		})
 	}
@@ -95,7 +102,8 @@ func (h *EventHandler) Create(c *fiber.Ctx) error {
 }
 
 func (h *EventHandler) List(c *fiber.Ctx) error {
-	events, err := h.q.ListEvents(c.Context())
+	userID := middleware.GetUserID(c)
+	events, err := h.q.ListEventsByUser(c.Context(), userID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": "failed to list events",
@@ -121,6 +129,15 @@ func (h *EventHandler) Get(c *fiber.Ctx) error {
 			"code":  "NOT_FOUND",
 		})
 	}
+
+	userID := middleware.GetUserID(c)
+	if event.CreatedBy != userID {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error": "you do not own this event",
+			"code":  "FORBIDDEN",
+		})
+	}
+
 	return c.JSON(event)
 }
 
@@ -133,11 +150,29 @@ func (h *EventHandler) Update(c *fiber.Ctx) error {
 		})
 	}
 
+	if resp := checkEventOwnership(c, h.q, id); resp != nil {
+		return resp
+	}
+
 	var req createEventRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "invalid request body",
 			"code":  "BAD_REQUEST",
+		})
+	}
+
+	if len(req.Name) == 0 || len(req.Name) > 255 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "name must be 1-255 characters",
+			"code":  "VALIDATION_ERROR",
+		})
+	}
+
+	if len(req.Description) > 5000 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "description must be at most 5000 characters",
+			"code":  "VALIDATION_ERROR",
 		})
 	}
 
@@ -173,6 +208,10 @@ func (h *EventHandler) Delete(c *fiber.Ctx) error {
 			"error": "invalid event ID",
 			"code":  "BAD_REQUEST",
 		})
+	}
+
+	if resp := checkEventOwnership(c, h.q, id); resp != nil {
+		return resp
 	}
 
 	if err := h.q.DeleteEvent(c.Context(), id); err != nil {

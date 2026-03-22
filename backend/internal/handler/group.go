@@ -28,6 +28,10 @@ func (h *GroupHandler) Create(c *fiber.Ctx) error {
 		})
 	}
 
+	if resp := checkEventOwnership(c, h.q, eventID); resp != nil {
+		return resp
+	}
+
 	var req createGroupRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -36,15 +40,22 @@ func (h *GroupHandler) Create(c *fiber.Ctx) error {
 		})
 	}
 
-	if req.Name == "" {
+	if len(req.Name) == 0 || len(req.Name) > 255 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "name is required",
+			"error": "name must be 1-255 characters",
 			"code":  "VALIDATION_ERROR",
 		})
 	}
 
 	if req.Color == "" {
 		req.Color = "#6366f1"
+	}
+
+	if !hexColorRegexp.MatchString(req.Color) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "color must be a valid hex color (e.g. #ff00aa)",
+			"code":  "VALIDATION_ERROR",
+		})
 	}
 
 	group, err := h.q.CreateGroup(c.Context(), queries.CreateGroupParams{
@@ -72,6 +83,10 @@ func (h *GroupHandler) List(c *fiber.Ctx) error {
 		})
 	}
 
+	if resp := checkEventOwnership(c, h.q, eventID); resp != nil {
+		return resp
+	}
+
 	groups, err := h.q.ListGroupsByEvent(c.Context(), eventID)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -91,11 +106,36 @@ func (h *GroupHandler) Update(c *fiber.Ctx) error {
 		})
 	}
 
+	existing, err := h.q.GetGroup(c.Context(), id)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "group not found",
+			"code":  "NOT_FOUND",
+		})
+	}
+	if resp := checkEventOwnership(c, h.q, existing.EventID); resp != nil {
+		return resp
+	}
+
 	var req createGroupRequest
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "invalid request body",
 			"code":  "BAD_REQUEST",
+		})
+	}
+
+	if len(req.Name) == 0 || len(req.Name) > 255 {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "name must be 1-255 characters",
+			"code":  "VALIDATION_ERROR",
+		})
+	}
+
+	if req.Color != "" && !hexColorRegexp.MatchString(req.Color) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "color must be a valid hex color (e.g. #ff00aa)",
+			"code":  "VALIDATION_ERROR",
 		})
 	}
 
@@ -120,6 +160,17 @@ func (h *GroupHandler) Delete(c *fiber.Ctx) error {
 			"error": "invalid group ID",
 			"code":  "BAD_REQUEST",
 		})
+	}
+
+	existing, err := h.q.GetGroup(c.Context(), id)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "group not found",
+			"code":  "NOT_FOUND",
+		})
+	}
+	if resp := checkEventOwnership(c, h.q, existing.EventID); resp != nil {
+		return resp
 	}
 
 	if err := h.q.DeleteGroup(c.Context(), id); err != nil {
@@ -158,6 +209,31 @@ func (h *GroupHandler) Merge(c *fiber.Ctx) error {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"error": "invalid target_id",
 			"code":  "BAD_REQUEST",
+		})
+	}
+
+	sourceGroup, err := h.q.GetGroup(c.Context(), sourceID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "source group not found",
+			"code":  "NOT_FOUND",
+		})
+	}
+	if resp := checkEventOwnership(c, h.q, sourceGroup.EventID); resp != nil {
+		return resp
+	}
+
+	targetGroup, err := h.q.GetGroup(c.Context(), targetID)
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"error": "target group not found",
+			"code":  "NOT_FOUND",
+		})
+	}
+	if uuidToString(sourceGroup.EventID) != uuidToString(targetGroup.EventID) {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error": "groups must belong to the same event",
+			"code":  "VALIDATION_ERROR",
 		})
 	}
 

@@ -41,6 +41,9 @@ SELECT * FROM events WHERE id = $1;
 -- name: ListEvents :many
 SELECT * FROM events ORDER BY event_date DESC NULLS LAST, created_at DESC;
 
+-- name: ListEventsByUser :many
+SELECT * FROM events WHERE created_by = $1 ORDER BY event_date DESC NULLS LAST, created_at DESC;
+
 -- name: UpdateEvent :one
 UPDATE events
 SET name = $2, event_date = $3, description = $4, updated_at = NOW()
