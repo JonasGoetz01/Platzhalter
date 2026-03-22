@@ -1,0 +1,31 @@
+# Devbox
+.devbox/
+
+# Python venv
+.venv/
+
+# Environment secrets
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Node
+node_modules/
+
+# Go
+/backend/tmp/
+
+# Next.js
+/frontend/.next/
+/frontend/out/
+
+# Devbox lock (optional - uncomment if you want to commit it)
+# devbox.lock

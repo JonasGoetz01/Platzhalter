@@ -1,0 +1,23 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.16.0/.schema/devbox.schema.json",
+  "packages": [
+    "atuin@latest",
+    "bun@latest",
+    "go@latest",
+    "air@latest",
+    "mailpit@latest",
+    "postgresql@17",
+    "sqlc@latest",
+    "python3@latest",
+    "gh@latest",
+    "go-migrate@latest"
+  ],
+  "shell": {
+    "init_hook": [
+      "export PATH=\"$HOME/.bun/bin:$PATH\"",
+      "export PGDATA=\"$PWD/.devbox/pgdata\"",
+      "if [ ! -s \"$PGDATA/PG_VERSION\" ]; then initdb -D \"$PGDATA\" --auth=trust --no-locale --encoding=UTF8; fi",
+      "mkdir -p \"$PWD/.devbox/virtenv/mailpit\""
+    ]
+  }
+}

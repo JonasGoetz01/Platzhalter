@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS "twoFactor";
+ALTER TABLE "user" DROP COLUMN IF EXISTS "twoFactorEnabled";

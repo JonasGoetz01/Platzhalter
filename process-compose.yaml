@@ -1,0 +1,67 @@
+version: "0.5"
+
+processes:
+  # ===== Infrastructure =====
+
+  postgres:
+    command: "pg_ctl start -o '-k /tmp -p ${DB_PORT}' -l ${DEVBOX_PROJECT_ROOT}/.devbox/virtenv/postgresql/postgres.log"
+    is_daemon: true
+    shutdown:
+      command: "pg_ctl stop -m fast"
+    readiness_probe:
+      exec:
+        command: "pg_isready -h ${DB_HOST} -p ${DB_PORT}"
+      initial_delay_seconds: 2
+      period_seconds: 2
+    availability:
+      restart: "on_failure"
+
+  postgres-setup:
+    command: |
+      psql -h ${DB_HOST} -p ${DB_PORT} -d postgres -tc "SELECT 1 FROM pg_roles WHERE rolname='${DB_USER}'" | grep -q 1 \
+        || createuser -h ${DB_HOST} -p ${DB_PORT} --superuser ${DB_USER}
+      psql -h ${DB_HOST} -p ${DB_PORT} -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='${DB_DATABASE}'" | grep -q 1 \
+        || createdb -h ${DB_HOST} -p ${DB_PORT} -O ${DB_USER} ${DB_DATABASE}
+    depends_on:
+      postgres:
+        condition: process_healthy
+    availability:
+      restart: "no"
+
+  migrate:
+    command: "migrate -path ./backend/migrations -database ${DATABASE_URL} up"
+    depends_on:
+      postgres-setup:
+        condition: process_completed_successfully
+    availability:
+      restart: "no"
+
+  mailpit:
+    command: "mailpit --smtp 0.0.0.0:${SMTP_PORT} --listen 0.0.0.0:${MAILPIT_UI_PORT} --database ${DEVBOX_PROJECT_ROOT}/.devbox/virtenv/mailpit/mailpit.db"
+    availability:
+      restart: "on_failure"
+
+  # ===== Application =====
+
+  backend:
+    command: "air"
+    working_dir: "./backend"
+    depends_on:
+      migrate:
+        condition: process_completed_successfully
+    availability:
+      restart: "on_failure"
+
+  frontend:
+    command: "bun dev --port ${FRONTEND_PORT}"
+    working_dir: "./frontend"
+    depends_on:
+      backend:
+        condition: process_started
+    availability:
+      restart: "on_failure"
+
+  # ===== Devbox-generated (keep disabled) =====
+
+  postgresql:
+    disabled: true
