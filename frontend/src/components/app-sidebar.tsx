@@ -63,6 +63,8 @@ export function AppSidebar() {
   )
 
   async function handleSignOut() {
+    const { clearTokenCache } = await import("@/lib/api")
+    clearTokenCache()
     await signOut()
     router.replace("/login")
   }
