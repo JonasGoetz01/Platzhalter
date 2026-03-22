@@ -10,7 +10,11 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 
+	root "github.com/jgotz/platzhalter/backend"
 	"github.com/jgotz/platzhalter/backend/internal/config"
 	"github.com/jgotz/platzhalter/backend/internal/db"
 	"github.com/jgotz/platzhalter/backend/internal/handler"
@@ -31,6 +35,11 @@ func main() {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
 	defer pool.Close()
+
+	// Run embedded migrations on startup
+	if err := runMigrations(cfg.DatabaseURL); err != nil {
+		log.Fatalf("failed to run migrations: %v", err)
+	}
 
 	// Auto-seed first admin if configured and no users exist
 	if err := db.AutoSeedAdmin(ctx, pool, cfg.AdminEmail, cfg.AdminPassword, cfg.AdminName); err != nil {
@@ -107,6 +116,29 @@ func main() {
 	if err := app.Listen(addr); err != nil {
 		log.Fatalf("server error: %v", err)
 	}
+}
+
+func runMigrations(databaseURL string) error {
+	d, err := iofs.New(root.MigrationsFS, "migrations")
+	if err != nil {
+		return fmt.Errorf("create migration source: %w", err)
+	}
+	m, err := migrate.NewWithSourceInstance("iofs", d, databaseURL)
+	if err != nil {
+		return fmt.Errorf("create migrator: %w", err)
+	}
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return fmt.Errorf("apply migrations: %w", err)
+	}
+	srcErr, dbErr := m.Close()
+	if srcErr != nil {
+		return fmt.Errorf("close migration source: %w", srcErr)
+	}
+	if dbErr != nil {
+		return fmt.Errorf("close migration db: %w", dbErr)
+	}
+	log.Println("Database migrations applied successfully")
+	return nil
 }
 
 func errorHandler(c *fiber.Ctx, err error) error {
