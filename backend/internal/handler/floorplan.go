@@ -46,7 +46,7 @@ func (h *FloorPlanHandler) Get(c *fiber.Ctx) error {
 		})
 	}
 
-	if resp := checkEventOwnership(c, h.q, eventID); resp != nil {
+	if resp := checkEventAccess(c, h.q, eventID); resp != nil {
 		return resp
 	}
 
@@ -74,7 +74,7 @@ func (h *FloorPlanHandler) Update(c *fiber.Ctx) error {
 		})
 	}
 
-	if resp := checkEventOwnership(c, h.q, eventID); resp != nil {
+	if resp := checkEventAccess(c, h.q, eventID); resp != nil {
 		return resp
 	}
 

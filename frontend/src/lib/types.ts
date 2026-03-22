@@ -4,8 +4,37 @@ export interface Event {
   event_date: string | null
   description: string
   created_by: string
+  organization_id: string | null
   created_at: string
   updated_at: string
+}
+
+export interface Organization {
+  id: string
+  name: string
+  slug: string
+  logo: string | null
+  metadata: string | null
+  createdAt: string
+}
+
+export interface Member {
+  id: string
+  organizationId: string
+  userId: string
+  role: string
+  createdAt: string
+}
+
+export interface Invitation {
+  id: string
+  organizationId: string
+  email: string
+  role: string
+  status: "pending" | "accepted" | "rejected" | "canceled"
+  expiresAt: string | null
+  inviterId: string
+  createdAt: string
 }
 
 export interface FloorPlan {

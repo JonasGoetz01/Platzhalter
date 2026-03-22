@@ -9,6 +9,7 @@ import {
   SettingsIcon,
 } from "lucide-react"
 import { Logo } from "@/components/logo"
+import { OrgSwitcher } from "@/components/org-switcher"
 import { useSession, signOut } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import {
@@ -36,9 +37,12 @@ export function TopBar() {
 
   return (
     <header className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
-      <Link href="/events" className="flex items-center">
-        <Logo variant="light" className="h-8" />
-      </Link>
+      <div className="flex items-center gap-3">
+        <Link href="/events" className="flex items-center">
+          <Logo variant="light" className="h-8" />
+        </Link>
+        <OrgSwitcher />
+      </div>
 
       <DropdownMenu>
         <DropdownMenuTrigger

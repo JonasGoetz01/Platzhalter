@@ -27,10 +27,11 @@ func uuidToString(u pgtype.UUID) string {
 	return uid.String()
 }
 
-// checkEventOwnership verifies the authenticated user owns the event.
-// Returns a 403 response if not, or nil if ownership is confirmed.
-func checkEventOwnership(c *fiber.Ctx, q *queries.Queries, eventID pgtype.UUID) error {
-	userID := middleware.GetUserID(c)
+// checkEventAccess verifies the authenticated user can access the event.
+// If an org context is present, checks the event belongs to that org.
+// Otherwise falls back to created_by ownership check.
+// Returns a fiber response if access is denied, or nil if access is confirmed.
+func checkEventAccess(c *fiber.Ctx, q *queries.Queries, eventID pgtype.UUID) error {
 	event, err := q.GetEvent(c.Context(), eventID)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
@@ -38,6 +39,21 @@ func checkEventOwnership(c *fiber.Ctx, q *queries.Queries, eventID pgtype.UUID) 
 			"code":  "NOT_FOUND",
 		})
 	}
+
+	orgID := middleware.GetOrgID(c)
+	if orgID != "" {
+		// Org context: verify event belongs to this org
+		if event.OrganizationID == nil || *event.OrganizationID != orgID {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"error": "event does not belong to this organization",
+				"code":  "FORBIDDEN",
+			})
+		}
+		return nil
+	}
+
+	// Fallback: created_by ownership check
+	userID := middleware.GetUserID(c)
 	if event.CreatedBy != userID {
 		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
 			"error": "you do not own this event",

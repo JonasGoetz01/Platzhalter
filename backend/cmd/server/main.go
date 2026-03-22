@@ -58,7 +58,7 @@ func main() {
 	api.Get("/health", h.Health.HealthCheck)
 
 	// Protected routes (JWT required)
-	v1 := api.Group("/v1", middleware.JWTAuth(cfg.JWTSecret, cfg.JWKSURL))
+	v1 := api.Group("/v1", middleware.JWTAuth(cfg.JWTSecret, cfg.JWKSURL), middleware.OptionalOrg(pool))
 
 	// Events
 	v1.Get("/events", h.Event.List)

@@ -25,13 +25,14 @@ type Account struct {
 }
 
 type Event struct {
-	ID          pgtype.UUID        `json:"id"`
-	Name        string             `json:"name"`
-	EventDate   pgtype.Date        `json:"event_date"`
-	Description *string            `json:"description"`
-	CreatedBy   string             `json:"created_by"`
-	CreatedAt   pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	ID             pgtype.UUID        `json:"id"`
+	Name           string             `json:"name"`
+	EventDate      pgtype.Date        `json:"event_date"`
+	Description    *string            `json:"description"`
+	CreatedBy      string             `json:"created_by"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+	OrganizationID *string            `json:"organization_id"`
 }
 
 type FloorPlan struct {
@@ -43,11 +44,39 @@ type FloorPlan struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
+type Invitation struct {
+	ID             string             `json:"id"`
+	OrganizationId string             `json:"organizationId"`
+	Email          string             `json:"email"`
+	Role           string             `json:"role"`
+	Status         string             `json:"status"`
+	ExpiresAt      pgtype.Timestamptz `json:"expiresAt"`
+	InviterId      string             `json:"inviterId"`
+	CreatedAt      pgtype.Timestamptz `json:"createdAt"`
+}
+
 type Jwk struct {
 	ID         string             `json:"id"`
 	PublicKey  string             `json:"publicKey"`
 	PrivateKey string             `json:"privateKey"`
 	CreatedAt  pgtype.Timestamptz `json:"createdAt"`
+}
+
+type Member struct {
+	ID             string             `json:"id"`
+	OrganizationId string             `json:"organizationId"`
+	UserId         string             `json:"userId"`
+	Role           string             `json:"role"`
+	CreatedAt      pgtype.Timestamptz `json:"createdAt"`
+}
+
+type Organization struct {
+	ID        string             `json:"id"`
+	Name      string             `json:"name"`
+	Slug      string             `json:"slug"`
+	Logo      *string            `json:"logo"`
+	Metadata  *string            `json:"metadata"`
+	CreatedAt pgtype.Timestamptz `json:"createdAt"`
 }
 
 type Person struct {
@@ -63,14 +92,15 @@ type Person struct {
 }
 
 type Session struct {
-	ID        string             `json:"id"`
-	UserId    string             `json:"userId"`
-	Token     string             `json:"token"`
-	ExpiresAt pgtype.Timestamptz `json:"expiresAt"`
-	IpAddress *string            `json:"ipAddress"`
-	UserAgent *string            `json:"userAgent"`
-	CreatedAt pgtype.Timestamptz `json:"createdAt"`
-	UpdatedAt pgtype.Timestamptz `json:"updatedAt"`
+	ID                   string             `json:"id"`
+	UserId               string             `json:"userId"`
+	Token                string             `json:"token"`
+	ExpiresAt            pgtype.Timestamptz `json:"expiresAt"`
+	IpAddress            *string            `json:"ipAddress"`
+	UserAgent            *string            `json:"userAgent"`
+	CreatedAt            pgtype.Timestamptz `json:"createdAt"`
+	UpdatedAt            pgtype.Timestamptz `json:"updatedAt"`
+	ActiveOrganizationId *string            `json:"activeOrganizationId"`
 }
 
 type TwoFactor struct {

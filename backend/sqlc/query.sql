@@ -27,12 +27,19 @@ DELETE FROM "user" WHERE id = $1;
 SELECT COUNT(*) FROM "user";
 
 -- ============================================================
+-- Organization queries
+-- ============================================================
+
+-- name: GetMemberRole :one
+SELECT role FROM member WHERE "organizationId" = $1 AND "userId" = $2;
+
+-- ============================================================
 -- Event queries
 -- ============================================================
 
 -- name: CreateEvent :one
-INSERT INTO events (name, event_date, description, created_by)
-VALUES ($1, $2, $3, $4)
+INSERT INTO events (name, event_date, description, created_by, organization_id)
+VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
 -- name: GetEvent :one
@@ -49,6 +56,9 @@ UPDATE events
 SET name = $2, event_date = $3, description = $4, updated_at = NOW()
 WHERE id = $1
 RETURNING *;
+
+-- name: ListEventsByOrganization :many
+SELECT * FROM events WHERE organization_id = $1 ORDER BY event_date DESC NULLS LAST, created_at DESC;
 
 -- name: DeleteEvent :exec
 DELETE FROM events WHERE id = $1;

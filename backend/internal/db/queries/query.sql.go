@@ -87,16 +87,17 @@ func (q *Queries) CountUsers(ctx context.Context) (int64, error) {
 
 const createEvent = `-- name: CreateEvent :one
 
-INSERT INTO events (name, event_date, description, created_by)
-VALUES ($1, $2, $3, $4)
-RETURNING id, name, event_date, description, created_by, created_at, updated_at
+INSERT INTO events (name, event_date, description, created_by, organization_id)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, name, event_date, description, created_by, created_at, updated_at, organization_id
 `
 
 type CreateEventParams struct {
-	Name        string      `json:"name"`
-	EventDate   pgtype.Date `json:"event_date"`
-	Description *string     `json:"description"`
-	CreatedBy   string      `json:"created_by"`
+	Name           string      `json:"name"`
+	EventDate      pgtype.Date `json:"event_date"`
+	Description    *string     `json:"description"`
+	CreatedBy      string      `json:"created_by"`
+	OrganizationID *string     `json:"organization_id"`
 }
 
 // ============================================================
@@ -108,6 +109,7 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (Event
 		arg.EventDate,
 		arg.Description,
 		arg.CreatedBy,
+		arg.OrganizationID,
 	)
 	var i Event
 	err := row.Scan(
@@ -118,6 +120,7 @@ func (q *Queries) CreateEvent(ctx context.Context, arg CreateEventParams) (Event
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OrganizationID,
 	)
 	return i, err
 }
@@ -215,7 +218,7 @@ func (q *Queries) DeleteUser(ctx context.Context, id string) error {
 }
 
 const getEvent = `-- name: GetEvent :one
-SELECT id, name, event_date, description, created_by, created_at, updated_at FROM events WHERE id = $1
+SELECT id, name, event_date, description, created_by, created_at, updated_at, organization_id FROM events WHERE id = $1
 `
 
 func (q *Queries) GetEvent(ctx context.Context, id pgtype.UUID) (Event, error) {
@@ -229,6 +232,7 @@ func (q *Queries) GetEvent(ctx context.Context, id pgtype.UUID) (Event, error) {
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OrganizationID,
 	)
 	return i, err
 }
@@ -272,6 +276,26 @@ func (q *Queries) GetFloorPlanWithVersion(ctx context.Context, arg GetFloorPlanW
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const getMemberRole = `-- name: GetMemberRole :one
+
+SELECT role FROM member WHERE "organizationId" = $1 AND "userId" = $2
+`
+
+type GetMemberRoleParams struct {
+	OrganizationId string `json:"organizationId"`
+	UserId         string `json:"userId"`
+}
+
+// ============================================================
+// Organization queries
+// ============================================================
+func (q *Queries) GetMemberRole(ctx context.Context, arg GetMemberRoleParams) (string, error) {
+	row := q.db.QueryRow(ctx, getMemberRole, arg.OrganizationId, arg.UserId)
+	var role string
+	err := row.Scan(&role)
+	return role, err
 }
 
 const getPerson = `-- name: GetPerson :one
@@ -395,7 +419,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id string) (GetUserByIDRow, e
 }
 
 const listEvents = `-- name: ListEvents :many
-SELECT id, name, event_date, description, created_by, created_at, updated_at FROM events ORDER BY event_date DESC NULLS LAST, created_at DESC
+SELECT id, name, event_date, description, created_by, created_at, updated_at, organization_id FROM events ORDER BY event_date DESC NULLS LAST, created_at DESC
 `
 
 func (q *Queries) ListEvents(ctx context.Context) ([]Event, error) {
@@ -415,6 +439,40 @@ func (q *Queries) ListEvents(ctx context.Context) ([]Event, error) {
 			&i.CreatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.OrganizationID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listEventsByOrganization = `-- name: ListEventsByOrganization :many
+SELECT id, name, event_date, description, created_by, created_at, updated_at, organization_id FROM events WHERE organization_id = $1 ORDER BY event_date DESC NULLS LAST, created_at DESC
+`
+
+func (q *Queries) ListEventsByOrganization(ctx context.Context, organizationID *string) ([]Event, error) {
+	rows, err := q.db.Query(ctx, listEventsByOrganization, organizationID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Event{}
+	for rows.Next() {
+		var i Event
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.EventDate,
+			&i.Description,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.OrganizationID,
 		); err != nil {
 			return nil, err
 		}
@@ -427,7 +485,7 @@ func (q *Queries) ListEvents(ctx context.Context) ([]Event, error) {
 }
 
 const listEventsByUser = `-- name: ListEventsByUser :many
-SELECT id, name, event_date, description, created_by, created_at, updated_at FROM events WHERE created_by = $1 ORDER BY event_date DESC NULLS LAST, created_at DESC
+SELECT id, name, event_date, description, created_by, created_at, updated_at, organization_id FROM events WHERE created_by = $1 ORDER BY event_date DESC NULLS LAST, created_at DESC
 `
 
 func (q *Queries) ListEventsByUser(ctx context.Context, createdBy string) ([]Event, error) {
@@ -447,6 +505,7 @@ func (q *Queries) ListEventsByUser(ctx context.Context, createdBy string) ([]Eve
 			&i.CreatedBy,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.OrganizationID,
 		); err != nil {
 			return nil, err
 		}
@@ -672,7 +731,7 @@ const updateEvent = `-- name: UpdateEvent :one
 UPDATE events
 SET name = $2, event_date = $3, description = $4, updated_at = NOW()
 WHERE id = $1
-RETURNING id, name, event_date, description, created_by, created_at, updated_at
+RETURNING id, name, event_date, description, created_by, created_at, updated_at, organization_id
 `
 
 type UpdateEventParams struct {
@@ -698,6 +757,7 @@ func (q *Queries) UpdateEvent(ctx context.Context, arg UpdateEventParams) (Event
 		&i.CreatedBy,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.OrganizationID,
 	)
 	return i, err
 }

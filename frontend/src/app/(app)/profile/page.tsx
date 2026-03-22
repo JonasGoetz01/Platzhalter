@@ -1,8 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import {
+  BuildingIcon,
   CopyIcon,
   Loader2Icon,
   MonitorIcon,
@@ -759,6 +761,86 @@ function ActiveSessionsCard() {
   )
 }
 
+// --- Organizations Card ---
+
+function OrganizationsCard() {
+  const t = useTranslations("org")
+  const router = useRouter()
+  const [orgs, setOrgs] = useState<{ id: string; name: string; slug: string }[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    authClient
+      .organization.list()
+      .then(({ data }) => {
+        if (data) setOrgs(data as { id: string; name: string; slug: string }[])
+      })
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function handleSwitch(orgId: string) {
+    await authClient.organization.setActive({ organizationId: orgId })
+    router.push("/events")
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="space-y-1.5">
+            <CardTitle>{t("organizations")}</CardTitle>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push("/organizations/new")}
+          >
+            {t("create")}
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="flex items-center justify-center py-4">
+            <Loader2Icon className="size-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : orgs.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t("noOrgsDescription")}</p>
+        ) : (
+          <div className="space-y-3">
+            {orgs.map((org) => (
+              <div
+                key={org.id}
+                className="flex items-center gap-3 rounded-lg border p-3"
+              >
+                <BuildingIcon className="size-5 shrink-0 text-muted-foreground" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{org.name}</p>
+                  <p className="text-xs text-muted-foreground">{org.slug}</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleSwitch(org.id)}
+                >
+                  {t("switchTo", { name: "" }).trim() || "Switch"}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => router.push(`/organizations/${org.slug}`)}
+                >
+                  {t("settings")}
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 // --- Profile Page ---
 
 export default function ProfilePage() {
@@ -772,6 +854,7 @@ export default function ProfilePage() {
       </div>
 
       <ChangeNameCard />
+      <OrganizationsCard />
       <ChangePasswordCard />
       <TwoFactorCard />
       <ActiveSessionsCard />

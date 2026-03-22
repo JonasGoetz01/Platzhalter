@@ -35,7 +35,7 @@ func (h *PersonHandler) Create(c *fiber.Ctx) error {
 		})
 	}
 
-	if resp := checkEventOwnership(c, h.q, eventID); resp != nil {
+	if resp := checkEventAccess(c, h.q, eventID); resp != nil {
 		return resp
 	}
 
@@ -84,7 +84,7 @@ func (h *PersonHandler) List(c *fiber.Ctx) error {
 		})
 	}
 
-	if resp := checkEventOwnership(c, h.q, eventID); resp != nil {
+	if resp := checkEventAccess(c, h.q, eventID); resp != nil {
 		return resp
 	}
 
@@ -119,7 +119,7 @@ func (h *PersonHandler) Update(c *fiber.Ctx) error {
 			"code":  "NOT_FOUND",
 		})
 	}
-	if resp := checkEventOwnership(c, h.q, existing.EventID); resp != nil {
+	if resp := checkEventAccess(c, h.q, existing.EventID); resp != nil {
 		return resp
 	}
 
@@ -166,7 +166,7 @@ func (h *PersonHandler) AssignSeat(c *fiber.Ctx) error {
 			"code":  "NOT_FOUND",
 		})
 	}
-	if resp := checkEventOwnership(c, h.q, existing.EventID); resp != nil {
+	if resp := checkEventAccess(c, h.q, existing.EventID); resp != nil {
 		return resp
 	}
 
@@ -220,7 +220,7 @@ func (h *PersonHandler) Park(c *fiber.Ctx) error {
 			"code":  "NOT_FOUND",
 		})
 	}
-	if resp := checkEventOwnership(c, h.q, existing.EventID); resp != nil {
+	if resp := checkEventAccess(c, h.q, existing.EventID); resp != nil {
 		return resp
 	}
 
@@ -256,7 +256,7 @@ func (h *PersonHandler) Delete(c *fiber.Ctx) error {
 			"code":  "NOT_FOUND",
 		})
 	}
-	if resp := checkEventOwnership(c, h.q, person.EventID); resp != nil {
+	if resp := checkEventAccess(c, h.q, person.EventID); resp != nil {
 		return resp
 	}
 
@@ -325,7 +325,7 @@ func (h *PersonHandler) Swap(c *fiber.Ctx) error {
 		})
 	}
 
-	if resp := checkEventOwnership(c, h.q, personA.EventID); resp != nil {
+	if resp := checkEventAccess(c, h.q, personA.EventID); resp != nil {
 		return resp
 	}
 

@@ -1,5 +1,5 @@
 import { betterAuth } from "better-auth";
-import { jwt, admin, twoFactor } from "better-auth/plugins";
+import { jwt, admin, twoFactor, organization } from "better-auth/plugins";
 import { Pool } from "pg";
 
 const port = process.env.FRONTEND_PORT || "3000";
@@ -41,6 +41,7 @@ export const auth = betterAuth({
         },
       },
     }),
+    organization(),
   ],
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days

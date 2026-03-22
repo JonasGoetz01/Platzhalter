@@ -2,6 +2,13 @@ import { authClient } from "./auth";
 
 const API_BASE = "/api/v1";
 
+// Active organization ID — set by OrgProvider
+let activeOrgId: string | null = null;
+
+export function setActiveOrgId(orgId: string | null) {
+  activeOrgId = orgId;
+}
+
 // Cache the JWT token to avoid fetching on every request.
 // The token expires in 15m server-side; we refresh after 13m.
 let cachedToken: string | null = null;
@@ -66,6 +73,9 @@ export async function apiFetch<T>(
     };
     if (authToken) {
       headers["Authorization"] = `Bearer ${authToken}`;
+    }
+    if (activeOrgId) {
+      headers["X-Organization-Id"] = activeOrgId;
     }
 
     return fetch(`${API_BASE}${path}`, {

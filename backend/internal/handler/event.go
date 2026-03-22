@@ -57,6 +57,7 @@ func (h *EventHandler) Create(c *fiber.Ctx) error {
 	}
 
 	userID := middleware.GetUserID(c)
+	orgID := middleware.GetOrgID(c)
 
 	// Create event and floor plan in a transaction
 	tx, err := h.pool.Begin(c.Context())
@@ -70,11 +71,17 @@ func (h *EventHandler) Create(c *fiber.Ctx) error {
 
 	qtx := h.q.WithTx(tx)
 
+	var orgIDParam *string
+	if orgID != "" {
+		orgIDParam = &orgID
+	}
+
 	event, err := qtx.CreateEvent(c.Context(), queries.CreateEventParams{
-		Name:        req.Name,
-		EventDate:   eventDate,
-		Description: &req.Description,
-		CreatedBy:   userID,
+		Name:           req.Name,
+		EventDate:      eventDate,
+		Description:    &req.Description,
+		CreatedBy:      userID,
+		OrganizationID: orgIDParam,
 	})
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
@@ -102,6 +109,18 @@ func (h *EventHandler) Create(c *fiber.Ctx) error {
 }
 
 func (h *EventHandler) List(c *fiber.Ctx) error {
+	orgID := middleware.GetOrgID(c)
+	if orgID != "" {
+		events, err := h.q.ListEventsByOrganization(c.Context(), &orgID)
+		if err != nil {
+			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+				"error": "failed to list events",
+				"code":  "INTERNAL_ERROR",
+			})
+		}
+		return c.JSON(events)
+	}
+
 	userID := middleware.GetUserID(c)
 	events, err := h.q.ListEventsByUser(c.Context(), userID)
 	if err != nil {
@@ -122,19 +141,15 @@ func (h *EventHandler) Get(c *fiber.Ctx) error {
 		})
 	}
 
+	if resp := checkEventAccess(c, h.q, id); resp != nil {
+		return resp
+	}
+
 	event, err := h.q.GetEvent(c.Context(), id)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"error": "event not found",
 			"code":  "NOT_FOUND",
-		})
-	}
-
-	userID := middleware.GetUserID(c)
-	if event.CreatedBy != userID {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"error": "you do not own this event",
-			"code":  "FORBIDDEN",
 		})
 	}
 
@@ -150,7 +165,7 @@ func (h *EventHandler) Update(c *fiber.Ctx) error {
 		})
 	}
 
-	if resp := checkEventOwnership(c, h.q, id); resp != nil {
+	if resp := checkEventAccess(c, h.q, id); resp != nil {
 		return resp
 	}
 
@@ -210,7 +225,7 @@ func (h *EventHandler) Delete(c *fiber.Ctx) error {
 		})
 	}
 
-	if resp := checkEventOwnership(c, h.q, id); resp != nil {
+	if resp := checkEventAccess(c, h.q, id); resp != nil {
 		return resp
 	}
 

@@ -51,7 +51,7 @@ func (h *PersonHandler) BulkAssign(c *fiber.Ctx) error {
 			"code":  "NOT_FOUND",
 		})
 	}
-	if resp := checkEventOwnership(c, h.q, firstPerson.EventID); resp != nil {
+	if resp := checkEventAccess(c, h.q, firstPerson.EventID); resp != nil {
 		return resp
 	}
 	eventID := uuidToString(firstPerson.EventID)

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { useTranslations } from "next-intl"
 import {
   Card,
@@ -203,6 +204,12 @@ export default function LoginPage() {
             {loading && <Loader2Icon className="animate-spin" />}
             {t("submit")}
           </Button>
+          <p className="text-center text-sm text-muted-foreground">
+            {t("noAccount")}{" "}
+            <Link href="/register" className="text-primary hover:underline">
+              {t("register")}
+            </Link>
+          </p>
         </form>
       </CardContent>
     </Card>

@@ -15,15 +15,12 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { apiFetch } from "@/lib/api"
-import { useSession } from "@/lib/auth"
 import type { Event } from "@/lib/types"
 
 export default function EventsPage() {
   const t = useTranslations("events")
   const tc = useTranslations("common")
   const locale = useLocale()
-  const { data: session } = useSession()
-  const isAdmin = (session?.user as any)?.role === "admin"
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -59,12 +56,10 @@ export default function EventsPage() {
             {t("subtitle")}
           </p>
         </div>
-        {isAdmin && (
-          <Button render={<Link href="/events/new" />}>
-            <PlusIcon />
-            {t("newEvent")}
-          </Button>
-        )}
+                <Button render={<Link href="/events/new" />}>
+          <PlusIcon />
+          {t("newEvent")}
+        </Button>
       </div>
 
       {events.length > 0 && (
@@ -156,12 +151,10 @@ export default function EventsPage() {
                 {t("noEventsDescription")}
               </p>
             </div>
-            {isAdmin && (
-              <Button render={<Link href="/events/new" />}>
-                <PlusIcon />
-                {t("createEvent")}
-              </Button>
-            )}
+            <Button render={<Link href="/events/new" />}>
+              <PlusIcon />
+              {t("createEvent")}
+            </Button>
           </CardContent>
         </Card>
       )}

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import Link from "next/link"
 import { ArrowLeftIcon, Loader2Icon } from "lucide-react"
-import { useRequireRole } from "@/hooks/use-require-role"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -26,18 +25,7 @@ export default function NewEventPage() {
   const t = useTranslations("events")
   const tc = useTranslations("common")
   const te = useTranslations("errors")
-  const { loading: authLoading, allowed } = useRequireRole(["admin"])
   const [loading, setLoading] = useState(false)
-
-  if (authLoading) {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <Loader2Icon className="size-8 animate-spin text-muted-foreground" />
-      </div>
-    )
-  }
-
-  if (!allowed) return null
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
