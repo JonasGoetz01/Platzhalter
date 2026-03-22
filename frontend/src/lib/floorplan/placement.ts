@@ -112,13 +112,12 @@ function distributeAcrossEdges(
 }
 
 /**
- * Returns "tableId:seatRef" keys for free seats that lie within the minimal
- * clockwise arc of a group's seated members. Placing a non-group person on
- * these seats would split the group, so they should be treated as blocked.
+ * Returns "tableId:seatRef" keys for free seats that lie between members of a
+ * group (in clockwise seat order). Placing a non-group person on these seats
+ * would split the group, so they should be treated as blocked.
  *
- * @param seats - clockwise-ordered seats from computeSeatsForTable
- * @param seatGroupMap - "tableId:seatRef" → groupId for all seated persons with a group
- * @param personGroupId - the group of the person being placed (null if ungrouped)
+ * Algorithm: For each group with 2+ members, walk every consecutive pair of
+ * members in clockwise order. Any free seats between them are blocked.
  */
 export function getGroupBlockedSeats(
   tableId: string,
@@ -133,46 +132,52 @@ export function getGroupBlockedSeats(
   // Build index → groupId for occupied seats on this table
   const indexGroup = new Map<number, string>()
   for (let i = 0; i < n; i++) {
-    const g = seatGroupMap.get(`${tableId}:${seats[i].seatRef}`)
+    const key = `${tableId}:${seats[i].seatRef}`
+    const g = seatGroupMap.get(key)
     if (g) indexGroup.set(i, g)
   }
 
-  // Process each group separately
-  const groupIds = new Set(indexGroup.values())
-  for (const groupId of groupIds) {
-    if (groupId === personGroupId) continue
-
-    const positions: number[] = []
-    for (const [idx, g] of indexGroup) {
-      if (g === groupId) positions.push(idx)
+  // Collect positions per group
+  const groupPositions = new Map<string, number[]>()
+  for (const [idx, gid] of indexGroup) {
+    if (gid === personGroupId) continue
+    let arr = groupPositions.get(gid)
+    if (!arr) {
+      arr = []
+      groupPositions.set(gid, arr)
     }
-    if (positions.length < 2) continue
+    arr.push(idx)
+  }
 
+  for (const [, positions] of groupPositions) {
+    if (positions.length < 2) continue
     positions.sort((a, b) => a - b)
 
-    // Find the largest gap between consecutive members (circular)
-    let maxGap = 0
-    let maxGapIdx = 0
+    // Find the largest gap between consecutive members (circular).
+    // The arc OUTSIDE the largest gap is the minimal arc containing all members.
+    let maxGap = -1
+    let maxGapEnd = 0 // index in positions[] of the member AFTER the largest gap
     for (let i = 0; i < positions.length; i++) {
-      const next = (i + 1) % positions.length
-      const gap =
-        next === 0
-          ? n - positions[i] + positions[0]
-          : positions[next] - positions[i]
+      const cur = positions[i]
+      const nxt = positions[(i + 1) % positions.length]
+      const gap = nxt > cur ? nxt - cur : n - cur + nxt
       if (gap > maxGap) {
         maxGap = gap
-        maxGapIdx = i
+        maxGapEnd = (i + 1) % positions.length
       }
     }
 
-    // Walk the minimal arc (everything outside the largest gap)
-    // and block any free seats within it.
-    const arcStart = positions[(maxGapIdx + 1) % positions.length]
-    const arcEnd = positions[maxGapIdx]
+    // Walk the minimal arc: from the member after the largest gap,
+    // through all members and the gaps between them, to the member
+    // before the largest gap. Block every FREE seat in between.
+    const first = positions[maxGapEnd]
+    const last = positions[(maxGapEnd + positions.length - 1) % positions.length]
 
-    let idx = (arcStart + 1) % n
-    while (idx !== arcEnd) {
+    // Walk from first to last (inclusive endpoints are group members, skip them)
+    let idx = (first + 1) % n
+    while (idx !== last) {
       const key = `${tableId}:${seats[idx].seatRef}`
+      // Only block if the seat is free (not occupied by anyone)
       if (!seatGroupMap.has(key)) {
         blocked.add(key)
       }

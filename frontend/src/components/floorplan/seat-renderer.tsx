@@ -12,6 +12,8 @@ interface SeatRendererProps {
   person: Person | undefined
   /** Group color for the seated person (if in a group) */
   groupColor?: string | null
+  /** Seat is blocked by a group — not assignable */
+  blocked?: boolean
   /** Current canvas scale for zoom-dependent rendering */
   scale?: number
   /** Table center position (world coords) for computing outward direction */
@@ -35,6 +37,7 @@ export function SeatRenderer({
   seat,
   person,
   groupColor,
+  blocked = false,
   scale = 1,
   tableCenter,
   tableRotation = 0,
@@ -50,7 +53,7 @@ export function SeatRenderer({
 }: SeatRendererProps) {
   const isFree = !person
   const onTargetTable = !assignTableId || seat.tableId === assignTableId
-  const isAssignable = assignMode && isFree && onTargetTable
+  const isAssignable = assignMode && isFree && onTargetTable && !blocked
   const canDrag = !!seatDraggable && !!person && !assignMode
 
   const groupRef = useRef<Konva.Group>(null)
@@ -102,23 +105,29 @@ export function SeatRenderer({
     }
   }
 
+  const isBlockedVisible = assignMode && isFree && blocked
+
   const fill = isAssignable
     ? TABLE_COLORS.assignHighlight
-    : person && groupColor
-      ? `${groupColor}66` // 40% opacity
-      : person
-        ? TABLE_COLORS.seatOccupied
-        : TABLE_COLORS.seatFill
+    : isBlockedVisible
+      ? "rgba(239, 68, 68, 0.15)" // red tint for blocked
+      : person && groupColor
+        ? `${groupColor}66` // 40% opacity
+        : person
+          ? TABLE_COLORS.seatOccupied
+          : TABLE_COLORS.seatFill
 
   const stroke = isAssignable
     ? TABLE_COLORS.assignStroke
-    : person && groupColor
-      ? `${groupColor}B3` // 70% opacity
-      : person
-        ? TABLE_COLORS.seatOccupiedStroke
-        : TABLE_COLORS.seatStroke
+    : isBlockedVisible
+      ? "rgba(239, 68, 68, 0.5)" // red border for blocked
+      : person && groupColor
+        ? `${groupColor}B3` // 70% opacity
+        : person
+          ? TABLE_COLORS.seatOccupiedStroke
+          : TABLE_COLORS.seatStroke
 
-  const strokeWidth = isAssignable ? 2 : 1
+  const strokeWidth = isAssignable ? 2 : isBlockedVisible ? 1.5 : 1
 
   const text = person
     ? person.name.slice(0, 2).toUpperCase()

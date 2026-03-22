@@ -196,6 +196,20 @@ export function FloorPlanEditor({
     return map
   }, [persons])
 
+  // Blocked seats: seats between group members that the selected person can't use
+  const blockedSeatKeys = useMemo(() => {
+    if (!selectedPersonId) return new Set<string>()
+    const selectedPerson = persons.find((p) => p.id === selectedPersonId)
+    const personGroupId = selectedPerson?.group_id ?? null
+    const allBlocked = new Set<string>()
+    for (const [tableId, seats] of allSeats) {
+      for (const key of getGroupBlockedSeats(tableId, seats, seatGroupMap, personGroupId)) {
+        allBlocked.add(key)
+      }
+    }
+    return allBlocked
+  }, [selectedPersonId, persons, allSeats, seatGroupMap])
+
   // groupId → color for fast lookup
   const groupColorMap = useMemo(() => {
     const map = new Map<string, string>()
@@ -796,6 +810,7 @@ export function FloorPlanEditor({
                   seat={seat}
                   person={personMap.get(`${seat.tableId}:${seat.seatRef}`)}
                   groupColor={groupColorMap.get(seatGroupMap.get(`${seat.tableId}:${seat.seatRef}`) ?? "")}
+                  blocked={blockedSeatKeys.has(`${seat.tableId}:${seat.seatRef}`)}
                   scale={scale}
                   tableCenter={{ x: table.x, y: table.y }}
                   tableRotation={table.rotation}
