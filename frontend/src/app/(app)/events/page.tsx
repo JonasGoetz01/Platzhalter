@@ -15,12 +15,14 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { apiFetch } from "@/lib/api"
+import { useOrg } from "@/lib/org-context"
 import type { Event } from "@/lib/types"
 
 export default function EventsPage() {
   const t = useTranslations("events")
   const tc = useTranslations("common")
   const locale = useLocale()
+  const { activeOrgId } = useOrg()
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -33,7 +35,7 @@ export default function EventsPage() {
       .then(setEvents)
       .catch(() => setError("Failed to load events"))
       .finally(() => setLoading(false))
-  }, [])
+  }, [activeOrgId])
 
   useEffect(() => {
     fetchEvents()
