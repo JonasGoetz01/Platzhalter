@@ -5,9 +5,11 @@ import nodemailer from "nodemailer";
 
 const port = process.env.FRONTEND_PORT || "3000";
 
+const smtpPort = Number(process.env.SMTP_PORT || 1025);
 const smtpTransport = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "127.0.0.1",
-  port: Number(process.env.SMTP_PORT || 1025),
+  port: smtpPort,
+  secure: smtpPort === 465,
   auth: process.env.SMTP_USER
     ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS || "" }
     : undefined,
