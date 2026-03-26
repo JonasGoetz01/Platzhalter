@@ -1,21 +1,9 @@
 import { betterAuth } from "better-auth";
 import { jwt, admin, twoFactor, organization } from "better-auth/plugins";
 import { Pool } from "pg";
-import nodemailer from "nodemailer";
+import { sendMail } from "./mail";
 
 const port = process.env.FRONTEND_PORT || "3000";
-
-const smtpPort = Number(process.env.SMTP_PORT || 1025);
-const smtpTransport = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "127.0.0.1",
-  port: smtpPort,
-  secure: smtpPort === 465,
-  auth: process.env.SMTP_USER
-    ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS || "" }
-    : undefined,
-});
-
-const smtpFrom = process.env.SMTP_FROM || "noreply@platzhalter.local";
 
 export const auth = betterAuth({
   baseURL: process.env.BETTER_AUTH_URL || `http://localhost:${port}`,
@@ -28,8 +16,7 @@ export const auth = betterAuth({
     async sendVerificationEmail({ user, token }) {
       const baseURL = process.env.BETTER_AUTH_URL || `http://localhost:${port}`;
       const verifyURL = `${baseURL}/verify-email?token=${token}`;
-      await smtpTransport.sendMail({
-        from: smtpFrom,
+      await sendMail({
         to: user.email,
         subject: "Verify your email — Platzhalter",
         text: `Hi ${user.name},\n\nPlease verify your email address by clicking the link below:\n\n${verifyURL}\n\nIf you did not create an account, you can ignore this email.`,
@@ -74,8 +61,7 @@ export const auth = betterAuth({
       async sendInvitationEmail({ id, email, organization, inviter }) {
         const baseURL = process.env.BETTER_AUTH_URL || `http://localhost:${port}`;
         const acceptURL = `${baseURL}/accept-invitation?id=${id}`;
-        await smtpTransport.sendMail({
-          from: smtpFrom,
+        await sendMail({
           to: email,
           subject: `Invitation to join ${organization.name}`,
           text: `${inviter.user.name} invited you to join "${organization.name}" on Platzhalter.\n\nAccept the invitation: ${acceptURL}`,

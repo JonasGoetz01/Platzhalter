@@ -13,11 +13,6 @@ type Config struct {
 	BackendHost  string `env:"BACKEND_HOST" envDefault:"127.0.0.1"`
 	FrontendPort string `env:"FRONTEND_PORT" envDefault:"3000"`
 	DatabaseURL  string `env:"DATABASE_URL,required"`
-	SMTPHost     string `env:"SMTP_HOST" envDefault:"127.0.0.1"`
-	SMTPPort     int    `env:"SMTP_PORT" envDefault:"1025"`
-	SMTPFrom     string `env:"SMTP_FROM" envDefault:"noreply@platzhalter.local"`
-	SMTPUser     string `env:"SMTP_USER"`
-	SMTPPass     string `env:"SMTP_PASS"`
 	JWTSecret    string `env:"JWT_SECRET,required"`
 	JWKSURL      string `env:"JWKS_URL"`
 
