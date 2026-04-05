@@ -66,6 +66,10 @@ export default function OrgSettingsPage() {
   const [invitations, setInvitations] = useState<FullOrgInvitation[]>([])
   const [loading, setLoading] = useState(true)
 
+  // Rename
+  const [orgName, setOrgName] = useState(activeOrg?.name ?? "")
+  const [renaming, setRenaming] = useState(false)
+
   // Invite form
   const [inviteEmail, setInviteEmail] = useState("")
   const [inviteRole, setInviteRole] = useState("member")
@@ -74,6 +78,10 @@ export default function OrgSettingsPage() {
   // Confirm dialogs
   const [leaveOpen, setLeaveOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+
+  useEffect(() => {
+    if (activeOrg?.name) setOrgName(activeOrg.name)
+  }, [activeOrg?.name])
 
   useEffect(() => {
     if (!activeOrg?.id) return
@@ -92,6 +100,27 @@ export default function OrgSettingsPage() {
       })
       .finally(() => setLoading(false))
   }, [activeOrg?.id])
+
+  async function handleRename(e: React.FormEvent) {
+    e.preventDefault()
+    if (!activeOrg?.id || !orgName.trim()) return
+    setRenaming(true)
+    try {
+      const { error } = await authClient.organization.update({
+        data: { name: orgName.trim() },
+        organizationId: activeOrg.id,
+      })
+      if (error) {
+        toast.error(error.message ?? "Failed to rename")
+        return
+      }
+      toast.success(t("orgRenamed"))
+    } catch {
+      toast.error("Failed to rename")
+    } finally {
+      setRenaming(false)
+    }
+  }
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault()
@@ -195,6 +224,32 @@ export default function OrgSettingsPage() {
         <h1 className="text-2xl font-bold tracking-tight">{t("settings")}</h1>
         <p className="text-muted-foreground">{t("settingsDescription")}</p>
       </div>
+
+      {/* Rename */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("renameOrg")}</CardTitle>
+          <CardDescription>{t("renameDescription")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleRename} className="flex gap-3 items-end flex-wrap">
+            <div className="flex-1 min-w-48 space-y-2">
+              <Label htmlFor="org-name">{t("name")}</Label>
+              <Input
+                id="org-name"
+                value={orgName}
+                onChange={(e) => setOrgName(e.target.value)}
+                required
+                disabled={renaming}
+              />
+            </div>
+            <Button type="submit" disabled={renaming || orgName.trim() === activeOrg?.name}>
+              {renaming && <Loader2Icon className="animate-spin" />}
+              {tc("save")}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       {/* Members */}
       <Card>
