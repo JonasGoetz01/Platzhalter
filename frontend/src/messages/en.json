@@ -120,7 +120,10 @@
       "tableCount": "Number of tables",
       "seatsPerTable": "Seats per table",
       "create": "Create tables",
-      "addTable": "Add table"
+      "addTable": "Add table",
+      "settings": "Settings",
+      "totalSeats": "Total seats",
+      "removeTableWarning": "{count, plural, one {# guest will be unseated} other {# guests will be unseated}}"
     }
   },
   "events": {

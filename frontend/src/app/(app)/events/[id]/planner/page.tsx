@@ -19,6 +19,7 @@ import {
   WandSparklesIcon,
   PlusIcon,
   MinusIcon,
+  SlidersHorizontalIcon,
 } from "lucide-react"
 import {
   DndContext,
@@ -111,6 +112,9 @@ export default function PlannerPage() {
 
   // Auto-place state
   const [autoPlacing, setAutoPlacing] = useState(false)
+
+  // Settings panel
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -377,6 +381,109 @@ export default function PlannerPage() {
     await saveLayout(newLayout)
   }
 
+  // ── Park multiple persons helper ────────────────────────────
+
+  async function parkPersons(personIds: string[]) {
+    for (const pid of personIds) {
+      try {
+        await apiFetch(`/persons/${pid}/park`, { method: "PUT" })
+      } catch {
+        // continue parking remaining
+      }
+    }
+    setPersons((prev) =>
+      prev.map((p) =>
+        personIds.includes(p.id)
+          ? { ...p, table_ref: null, seat_ref: null, parked: true }
+          : p
+      )
+    )
+  }
+
+  // ── Settings handlers ─────────────────────────────────────
+
+  // Derive current seats-per-table from first table
+  const currentSeatsPerTable = useMemo(() => {
+    if (tables.length === 0) return 8
+    return getTotalSeatCount(tables[0])
+  }, [tables])
+
+  async function handleSetTableCount(newCount: number) {
+    const currentCount = tables.length
+    if (newCount === currentCount || newCount < 1 || newCount > 50) return
+
+    if (newCount > currentCount) {
+      // Add tables
+      const toAdd = newCount - currentCount
+      const newTables = generateTables(toAdd, currentSeatsPerTable, currentCount)
+      const newLayout: FloorPlanLayout = {
+        ...layout!,
+        tables: [...tables, ...newTables],
+      }
+      await saveLayout(newLayout)
+    } else {
+      // Remove tables from the end
+      const removedTables = tables.slice(newCount)
+      const removedTableIds = new Set(removedTables.map((t) => t.id))
+
+      // Find persons seated at removed tables
+      const displacedPersonIds = persons
+        .filter((p) => p.table_ref && removedTableIds.has(p.table_ref))
+        .map((p) => p.id)
+
+      if (displacedPersonIds.length > 0) {
+        await parkPersons(displacedPersonIds)
+      }
+
+      const newLayout: FloorPlanLayout = {
+        ...layout!,
+        tables: tables.slice(0, newCount),
+      }
+      await saveLayout(newLayout)
+    }
+  }
+
+  async function handleSetSeatsPerTable(newSeats: number) {
+    if (newSeats < 2 || newSeats > 20 || newSeats === currentSeatsPerTable) return
+
+    const topSeats = Math.ceil(newSeats / 2)
+    const bottomSeats = Math.floor(newSeats / 2)
+
+    // Find persons who will lose their seats
+    const displacedPersonIds: string[] = []
+    for (const table of tables) {
+      const newSeatRefs = new Set<string>()
+      for (let i = 0; i < topSeats; i++) newSeatRefs.add(`top-${i}`)
+      for (let i = 0; i < bottomSeats; i++) newSeatRefs.add(`bottom-${i}`)
+
+      for (const p of persons) {
+        if (p.table_ref === table.id && p.seat_ref && !newSeatRefs.has(p.seat_ref)) {
+          displacedPersonIds.push(p.id)
+        }
+      }
+    }
+
+    if (displacedPersonIds.length > 0) {
+      await parkPersons(displacedPersonIds)
+    }
+
+    const updatedTables = tables.map((table) => ({
+      ...table,
+      edges: {
+        top: { seatCount: topSeats },
+        right: { seatCount: 0 },
+        bottom: { seatCount: bottomSeats },
+        left: { seatCount: 0 },
+      },
+    }))
+
+    const newLayout: FloorPlanLayout = {
+      ...layout!,
+      tables: updatedTables,
+    }
+    await saveLayout(newLayout)
+  }
+
   // ── Click handlers (fallback for non-drag) ──────────────────
 
   function handleSeatClick(table: FloorPlanTable, seat: ComputedSeat) {
@@ -475,13 +582,25 @@ export default function PlannerPage() {
             <Button
               size="sm"
               variant="outline"
-              onClick={handleAddTable}
+              onClick={() => setSettingsOpen(!settingsOpen)}
             >
-              <PlusIcon className="size-4" />
-              {tf("addTable")}
+              <SlidersHorizontalIcon className="size-4" />
+              {tf("settings")}
             </Button>
           </div>
         </div>
+
+        {/* Settings panel */}
+        {settingsOpen && (
+          <PlannerSettings
+            tableCount={tables.length}
+            seatsPerTable={currentSeatsPerTable}
+            onSetTableCount={handleSetTableCount}
+            onSetSeatsPerTable={handleSetSeatsPerTable}
+            tf={tf}
+            tc={tc}
+          />
+        )}
 
         {/* Table cards */}
         <div className="space-y-4">
@@ -957,6 +1076,126 @@ function DroppableSeat({
           {seat.label}
         </span>
       )}
+    </div>
+  )
+}
+
+// ── PlannerSettings (inline collapsible) ─────────────────────
+
+function PlannerSettings({
+  tableCount,
+  seatsPerTable,
+  onSetTableCount,
+  onSetSeatsPerTable,
+  tf,
+  tc,
+}: {
+  tableCount: number
+  seatsPerTable: number
+  onSetTableCount: (count: number) => Promise<void>
+  onSetSeatsPerTable: (seats: number) => Promise<void>
+  tf: (key: string) => string
+  tc: (key: string) => string
+}) {
+  const [updating, setUpdating] = useState(false)
+
+  async function handleTableCount(value: number) {
+    const clamped = Math.max(1, Math.min(50, value))
+    if (clamped === tableCount) return
+    setUpdating(true)
+    try {
+      await onSetTableCount(clamped)
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  async function handleSeatsPerTable(value: number) {
+    const clamped = Math.max(2, Math.min(20, value))
+    if (clamped === seatsPerTable) return
+    setUpdating(true)
+    try {
+      await onSetSeatsPerTable(clamped)
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  return (
+    <div className="rounded-xl border bg-card p-4 space-y-4">
+      <div className="space-y-2">
+        <Label>{tf("tableCount")}</Label>
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="size-10 shrink-0"
+            disabled={updating || tableCount <= 1}
+            onClick={() => handleTableCount(tableCount - 1)}
+          >
+            <MinusIcon className="size-4" />
+          </Button>
+          <Input
+            type="number"
+            min={1}
+            max={50}
+            value={tableCount}
+            disabled={updating}
+            onChange={(e) => handleTableCount(Number(e.target.value) || 1)}
+            className="text-center text-lg font-semibold tabular-nums"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="size-10 shrink-0"
+            disabled={updating || tableCount >= 50}
+            onClick={() => handleTableCount(tableCount + 1)}
+          >
+            <PlusIcon className="size-4" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>{tf("seatsPerTable")}</Label>
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="size-10 shrink-0"
+            disabled={updating || seatsPerTable <= 2}
+            onClick={() => handleSeatsPerTable(seatsPerTable - 1)}
+          >
+            <MinusIcon className="size-4" />
+          </Button>
+          <Input
+            type="number"
+            min={2}
+            max={20}
+            value={seatsPerTable}
+            disabled={updating}
+            onChange={(e) => handleSeatsPerTable(Number(e.target.value) || 2)}
+            className="text-center text-lg font-semibold tabular-nums"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="size-10 shrink-0"
+            disabled={updating || seatsPerTable >= 20}
+            onClick={() => handleSeatsPerTable(seatsPerTable + 1)}
+          >
+            <PlusIcon className="size-4" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="text-center text-sm text-muted-foreground">
+        {tableCount} &times; {seatsPerTable} = {tableCount * seatsPerTable} {tf("totalSeats")}
+      </div>
     </div>
   )
 }
