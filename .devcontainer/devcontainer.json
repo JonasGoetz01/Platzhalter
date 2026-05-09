@@ -1,0 +1,60 @@
+{
+  "name": "Platzhalter Dev",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "devcontainer",
+  "workspaceFolder": "/workspace",
+
+  "forwardPorts": [3000, 8080, 8025, 5432, 1025],
+  "portsAttributes": {
+    "3000": { "label": "Frontend (Next.js)" },
+    "8080": { "label": "Backend (Go Fiber)" },
+    "8025": { "label": "Mailpit UI" },
+    "5432": { "label": "PostgreSQL" },
+    "1025": { "label": "Mailpit SMTP" }
+  },
+
+  "postCreateCommand": "bash /workspace/.devcontainer/init.sh",
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.go",
+        "biomejs.biome",
+        "bradlc.vscode-tailwindcss",
+        "dbaeumer.vscode-eslint",
+        "mtxr.sqltools",
+        "mtxr.sqltools-driver-pg",
+        "ms-azuretools.vscode-docker",
+        "GitHub.vscode-github-actions"
+      ],
+      "settings": {
+        "go.toolsManagement.checkForUpdates": "local",
+        "go.useLanguageServer": true,
+        "go.gopath": "/root/go",
+        "editor.formatOnSave": true,
+        "[go]": {
+          "editor.defaultFormatter": "golang.go"
+        },
+        "[typescript]": {
+          "editor.defaultFormatter": "biomejs.biome"
+        },
+        "[typescriptreact]": {
+          "editor.defaultFormatter": "biomejs.biome"
+        },
+        "sqltools.connections": [
+          {
+            "name": "Platzhalter (devcontainer)",
+            "driver": "PostgreSQL",
+            "host": "postgres",
+            "port": 5432,
+            "database": "platzhalter",
+            "username": "platzhalter",
+            "password": "platzhalter"
+          }
+        ]
+      }
+    }
+  },
+
+  "remoteUser": "root"
+}

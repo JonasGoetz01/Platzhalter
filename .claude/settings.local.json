@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(head:*)",
+      "Bash(devbox run:*)",
+      "Bash(cd:*)",
+      "Bash(go build:*)",
+      "Bash(tail:*)",
+      "Bash(bunx shadcn@latest:*)",
+      "Bash(cd /Users/jgotz/workspace/Privat/Platzhalter && migrate -path ./backend/migrations -database \"postgresql://jgotz@localhost:5432/platzhalter?sslmode=disable\" up 2>&1)",
+      "Bash(psql:*)",
+      "Bash(cd /Users/jgotz/workspace/Privat/Platzhalter/backend && sqlc generate 2>&1)",
+      "Bash(migrate:*)",
+      "Bash(ls:*)",
+      "Bash(bunx:*)",
+      "Bash(agent-browser:*)",
+      "Bash(true:*)",
+      "Bash(git add -A && git commit -m \"Pre-audit snapshot \\(fixed submodule\\)\" 2>&1)",
+      "Bash(git add -A && git commit -m \"Pre-audit snapshot\" 2>&1)",
+      "Bash(git:*)",
+      "Bash(cd /Users/jgotz/workspace/Privat/Platzhalter/backend && go get github.com/golang-migrate/migrate/v4 github.com/golang-migrate/migrate/v4/database/postgres github.com/golang-migrate/migrate/v4/source/iofs 2>&1)",
+      "Bash(go mod:*)",
+      "Bash(grep:*)",
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "Bash(echo Try restarting manually with: devbox services restart:*)",
+      "Bash(node:*)",
+      "WebFetch(domain:docs.usesend.com)",
+      "WebFetch(domain:www.npmjs.com)"
+    ]
+  }
+}

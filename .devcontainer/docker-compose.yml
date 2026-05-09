@@ -1,0 +1,79 @@
+services:
+  devcontainer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspace:cached
+      - go-mod-cache:/root/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+      - bun-cache:/root/.bun/install/cache
+    command: sleep infinity
+    environment:
+      # PostgreSQL — points to the postgres service
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: platzhalter
+      DB_PASSWORD: platzhalter
+      DB_DATABASE: platzhalter
+      DB_SSLMODE: disable
+      DATABASE_URL: postgresql://platzhalter:platzhalter@postgres:5432/platzhalter?sslmode=disable
+
+      # Email — points to the mailpit service
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_FROM: noreply@platzhalter.local
+      EMAIL_FROM: noreply@platzhalter.local
+      MAILPIT_UI_PORT: 8025
+
+      # Backend
+      BACKEND_PORT: 8080
+      # Bind to all interfaces so VS Code port forwarding works
+      BACKEND_HOST: 0.0.0.0
+
+      # Frontend
+      FRONTEND_PORT: 3000
+
+      # Auth
+      JWT_SECRET: dev-secret-change-in-production
+      BETTER_AUTH_SECRET: dev-auth-secret-change-in-production
+      BETTER_AUTH_URL: http://localhost:3000
+
+      # Auto-seed first admin
+      ADMIN_EMAIL: admin@platzhalter.local
+      ADMIN_PASSWORD: admin123
+      ADMIN_NAME: Admin
+
+      APP_ENV: development
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: platzhalter
+      POSTGRES_PASSWORD: platzhalter
+      POSTGRES_DB: platzhalter
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U platzhalter"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    environment:
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+
+volumes:
+  postgres-data:
+  go-mod-cache:
+  go-build-cache:
+  bun-cache:
