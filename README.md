@@ -28,74 +28,26 @@
 
 Platzhalter is a real-time, multi-user seating plan editor built for weddings, conferences, and corporate events. Design your floor plan on a canvas, organize guests into groups, drag them to seats, and export the final plan as a PDF.
 
-## Features
 
-**Floor Plan Editor**
-- Interactive canvas powered by Konva.js with pan, zoom, and pinch-to-zoom
-- Rectangular tables with per-edge seat configuration
-- Drag to move, resize handles, rotation, and snap-to-grid
-- Decorative shapes (rectangles, circles, lines, polygons)
-- Full undo/redo history
-
-**Guest & Group Management**
-- Guest list with search, bulk selection, and inline editing
-- Named groups with color coding and visual connection lines
-- Group seat blocking prevents non-members from splitting groups
-- Booked table indicators for pre-assigned reservations
-
-**Seating Assignment**
-- Click-to-assign, drag-and-drop from guest panel, or bulk auto-assign
-- Seat-to-seat drag for quick reassignment with automatic swap
-- Ghost preview during drag operations
-- Real-time sync across multiple browser sessions via SSE
-
-**Multi-language & Accessible**
-- Full German and English translations via next-intl
-- Mobile-first with 44px touch targets and responsive layouts
-- Skip-to-content link, focus indicators, ARIA labels
-- Dark theme optimized for projector and venue walkthroughs
-
-**PDF Export**
-- Sortable guest list with table and seat numbers
-- Event header with name and date, paginated output
-
-## Quick Start
-
-### Prerequisites
-
-- [Devbox](https://www.jetify.com/devbox) (manages Go, Bun, PostgreSQL, and all other dependencies)
 
 ### Setup
 
 ```bash
-# Clone the repository
-git clone https://github.com/JonasGoetz01/Platzhalter.git
-cd Platzhalter
+reopen in devcontainer
 
-# Enter the reproducible dev environment
-devbox shell
+Zweites Terminal öffnen und 
+cd frontend
+bun run dev
 
-# Copy and configure environment variables
-cp .env.example .env
-# Edit .env — set JWT_SECRET, BETTER_AUTH_SECRET, and DB credentials
+im anderen Terminal 
+cd backend
+air
 
-# Install frontend dependencies
-cd frontend && bun install && cd ..
-
-# Start all services (PostgreSQL, migrations, backend, frontend, mail)
-devbox services up
+Frontend erreichbar unter http://localhost:3000
+Email Dummy errichbar unter http://localhost:8030
 ```
 
 The app is now running at **http://localhost:3000**. An admin user is auto-created from the `ADMIN_EMAIL` / `ADMIN_PASSWORD` env vars on first boot.
-
-### Services
-
-| Service    | URL                    | Description                |
-|------------|------------------------|----------------------------|
-| Frontend   | http://localhost:3000   | Next.js App Router         |
-| Backend    | http://localhost:8080   | Go Fiber REST API          |
-| PostgreSQL | localhost:5432          | Database                   |
-| Mailpit    | http://localhost:8025   | Email testing UI           |
 
 ## Architecture
 
@@ -131,83 +83,6 @@ The app is now running at **http://localhost:3000**. An admin user is auto-creat
 | Auth        | BetterAuth                     |
 
 ## Development
-
-### Project Structure
-
-```
-Platzhalter/
-├── backend/
-│   ├── cmd/
-│   │   ├── server/          # Application entrypoint
-│   │   └── seed/            # Database seed script
-│   ├── internal/
-│   │   ├── config/          # Environment-based configuration
-│   │   ├── db/              # Connection pool, auto-seed, generated queries
-│   │   ├── handler/         # HTTP route handlers
-│   │   └── middleware/      # CORS, JWT auth, logging, request ID
-│   ├── migrations/          # SQL migration files (up/down)
-│   └── sqlc/                # Query definitions → code generation
-│
-├── frontend/
-│   ├── src/
-│   │   ├── app/             # Next.js App Router pages and layouts
-│   │   ├── components/
-│   │   │   ├── ui/          # shadcn/ui base components
-│   │   │   └── floorplan/   # Editor, seat renderer, toolbars, panels
-│   │   ├── hooks/           # Custom React hooks (SSE, undo/redo, etc.)
-│   │   ├── lib/             # API client, auth, floorplan geometry, types
-│   │   └── messages/        # Translation files (de.json, en.json)
-│   └── next.config.ts       # API proxy rewrites, i18n plugin
-│
-├── devbox.json              # Reproducible dev environment
-├── process-compose.yaml     # Service orchestration
-└── .env.example             # Environment variable template
-```
-
-### Common Commands
-
-```bash
-# Start all services
-devbox services up
-
-# Run backend only (with hot reload)
-cd backend && air
-
-# Run frontend only
-cd frontend && bun dev
-
-# Add a database migration
-migrate create -ext sql -dir backend/migrations -seq <name>
-
-# Regenerate sqlc queries (after editing backend/sqlc/query.sql)
-cd backend && sqlc generate
-
-# Seed the database with sample data
-cd backend && go run ./cmd/seed/
-
-# Build frontend for production
-cd frontend && bun run build
-
-# Build backend binary
-cd backend && go build -o server ./cmd/server/
-```
-
-### Environment Variables
-
-| Variable             | Required | Default        | Description                          |
-|----------------------|----------|----------------|--------------------------------------|
-| `DATABASE_URL`       | Yes      | —              | PostgreSQL connection string         |
-| `JWT_SECRET`         | Yes      | —              | Secret for JWT signing               |
-| `BETTER_AUTH_SECRET` | Yes      | —              | BetterAuth session encryption        |
-| `BACKEND_PORT`       | No       | `8080`         | Go backend listen port               |
-| `BACKEND_HOST`       | No       | `127.0.0.1`    | Go backend listen host               |
-| `FRONTEND_PORT`      | No       | `3000`         | Next.js dev server port              |
-| `ADMIN_EMAIL`        | No       | —              | Auto-seed admin email on first boot  |
-| `ADMIN_PASSWORD`     | No       | —              | Auto-seed admin password             |
-| `ADMIN_NAME`         | No       | `Admin`        | Auto-seed admin display name         |
-| `SMTP_HOST`          | No       | `127.0.0.1`    | SMTP server for email                |
-| `SMTP_PORT`          | No       | `1025`         | SMTP port (Mailpit default)          |
-
 ### API Overview
 
 All endpoints require JWT authentication via `Authorization: Bearer <token>`.
@@ -239,33 +114,6 @@ POST   /api/v1/groups/merge              Merge two groups
 
 GET    /api/v1/events/:id/stream         SSE real-time updates
 ```
-
-## Deployment
-
-### Production Build
-
-```bash
-# Backend
-cd backend && CGO_ENABLED=0 go build -ldflags="-s -w" -o platzhalter ./cmd/server/
-
-# Frontend
-cd frontend && bun run build && bun run start
-```
-
-### Requirements
-
-- PostgreSQL 17+
-- The Go binary and Next.js server need to reach the same PostgreSQL instance
-- Set `APP_ENV=production` and use strong secrets for `JWT_SECRET` and `BETTER_AUTH_SECRET`
-
-## Roles & Permissions
-
-| Role      | Capabilities                                                             |
-|-----------|--------------------------------------------------------------------------|
-| Admin     | Full access: users, events, floor plans, tables, seats, groups, export   |
-| Moderator | Events, tables, seats, groups, drag-and-drop, export. No user management |
-
-There is no guest-facing or public role. User invitations are email-based via BetterAuth.
 
 ## License
 
